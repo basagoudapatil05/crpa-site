@@ -4,16 +4,20 @@ export default function Header(){
   return (
     <header className="container header">
       <div className="logo">
-        {/* Replace /images/CIVIL.jpg with your exact logo filename in public/images */}
-        <img src="/images/CIVIL.jpg" alt="CRPA logo"/>
+        {/* Update your logo file here if needed */}
+        <img src="/images/CIVIL.jpg" alt="CRPA Logo"/>
         <div>
           <div className="tag">CONSULTING CIVIL ENGINEERS & CONTRACTORS</div>
           <div style={{fontSize:14,color:'var(--muted)'}}>Structure. <span style={{color:'var(--accent)'}}>Craft.</span> Assurance.</div>
         </div>
       </div>
-      <nav style={{display:'flex',gap:14,alignItems:'center'}}>
+
+      {/* Navigation */}
+      <nav style={{display:'flex',alignItems:'center',gap:20}}>
+        <Link href="/ongoing" style={{color:'var(--muted)'}}>Ongoing</Link>
+        <Link href="/upcoming" style={{color:'var(--muted)'}}>Upcoming</Link>
+        <Link href="/completed" style={{color:'var(--muted)'}}>Completed</Link>
         <a href="#contact" style={{color:'var(--muted)'}}>Contact</a>
-        <a href="https://instagram.com/crpa1989" target="_blank" rel="noreferrer" style={{color:'var(--muted)'}}>@crpa1989</a>
       </nav>
     </header>
   )
