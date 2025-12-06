@@ -3,10 +3,6 @@ import Header from "../components/Header";
 import { useState } from "react";
 import ProjectCard from "../components/ProjectCard";
 
-// ------------------------------------
-// COMPLETED PROJECTS LIST (sample only)
-// YOU WILL UPDATE LATER THROUGH ADMIN
-// ------------------------------------
 const completed = [
   {
     id: 201,
@@ -31,22 +27,13 @@ const completed = [
     type: "Commercial",
     images: ["/images/1000.jpg"],
     scope: "Commercial Structure",
-  },
-  {
-    id: 204,
-    name: "Modern Villa – Belagavi",
-    location: "Belagavi",
-    type: "Residential",
-    images: ["/images/IMG_4157.jpg"],
-    scope: "Turnkey Residence",
-  },
+  }
 ];
 
 export default function CompletedProjects() {
   const [filter, setFilter] = useState("All");
   const [lightbox, setLightbox] = useState(null);
 
-  // Filter logic
   const filtered =
     filter === "All"
       ? completed
@@ -62,11 +49,10 @@ export default function CompletedProjects() {
 
       <main className="container" style={{ paddingTop: 20 }}>
         <h2>Completed Projects</h2>
-        <p style={{ color: "var(--muted)", marginBottom: 20 }}>
-          Over <b>1200+ Residential</b> and <b>200+ Commercial</b> projects completed across Karnataka in 30+ years.
+        <p style={{ color: "var(--muted)" }}>
+          Over <b>1200+ Residential</b> and <b>200+ Commercial</b> structures in 30+ years.
         </p>
 
-        {/* Filter Buttons */}
         <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
           {["All", "Residential", "Commercial", "Institutional"].map((btn) => (
             <button
@@ -83,7 +69,6 @@ export default function CompletedProjects() {
           ))}
         </div>
 
-        {/* Project Grid */}
         <div className="grid">
           {filtered.map((p) => (
             <ProjectCard
@@ -95,7 +80,6 @@ export default function CompletedProjects() {
         </div>
       </main>
 
-      {/* Lightbox */}
       {lightbox && (
         <div
           className="lightbox-backdrop"
