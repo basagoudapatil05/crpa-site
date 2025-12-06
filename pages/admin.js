@@ -1,0 +1,209 @@
+import { useEffect, useState } from "react";
+
+// API helper
+async function api(path, body = null) {
+  return fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : null,
+  }).then((r) => r.json());
+}
+
+export default function AdminPage() {
+  const [projects, setProjects] = useState([]);
+  const [uploading, setUploading] = useState(false);
+
+  // FORM STATE
+  const [form, setForm] = useState({
+    title: "",
+    location: "",
+    scope: "",
+    status: "ongoing",
+  });
+
+  const [images, setImages] = useState([]);
+
+  // LOAD PROJECTS
+  async function loadProjects() {
+    const res = await fetch("/api/projects/list").then((r) => r.json());
+    setProjects(res);
+  }
+
+  useEffect(() => {
+    loadProjects();
+  }, []);
+
+  // HANDLE IMAGE UPLOAD
+  async function uploadImage(file) {
+    setUploading(true);
+
+    // Request signed upload URL
+    const res = await fetch("/api/upload-url", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name }),
+    }).then((r) => r.json());
+
+    // Upload to Supabase via PUT
+    await fetch(res.uploadUrl, {
+      method: "PUT",
+      body: file,
+    });
+
+    setUploading(false);
+    return res.path; // Return storage path
+  }
+
+  // ADD PROJECT
+  async function addProject(e) {
+    e.preventDefault();
+
+    let imagePaths = [];
+
+    if (images.length > 0) {
+      for (let i = 0; i < images.length; i++) {
+        const p = await uploadImage(images[i]);
+        imagePaths.push(p);
+      }
+    }
+
+    const payload = {
+      ...form,
+      images: imagePaths,
+      featured_image: imagePaths[0] || null,
+    };
+
+    await api("/api/projects/create", payload);
+    await loadProjects();
+
+    // Reset form
+    setForm({ title: "", location: "", scope: "", status: "ongoing" });
+    setImages([]);
+  }
+
+  // DELETE PROJECT
+  async function deleteProject(id) {
+    await api("/api/projects/delete", { id });
+    await loadProjects();
+  }
+
+  return (
+    <div style={{ padding: 30, fontFamily: "Arial", color: "#fff", background: "#0f1114", minHeight: "100vh" }}>
+      <h1>CRPA Admin Dashboard</h1>
+      <p style={{ opacity: 0.7 }}>Manage all projects here.</p>
+
+      <hr style={{ margin: "20px 0", opacity: 0.2 }} />
+
+      {/* ADD PROJECT FORM */}
+      <h2>Add New Project</h2>
+      <form onSubmit={addProject} style={{ marginBottom: 40 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <input
+            placeholder="Project Title"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            required
+            style={inputStyle}
+          />
+          <input
+            placeholder="Location"
+            value={form.location}
+            onChange={(e) => setForm({ ...form, location: e.target.value })}
+            style={inputStyle}
+          />
+        </div>
+
+        <input
+          placeholder="Scope"
+          value={form.scope}
+          onChange={(e) => setForm({ ...form, scope: e.target.value })}
+          style={{ ...inputStyle, marginTop: 10 }}
+        />
+
+        <select
+          value={form.status}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
+          style={{ ...inputStyle, marginTop: 10 }}
+        >
+          <option value="ongoing">Ongoing</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="completed">Completed</option>
+        </select>
+
+        {/* IMAGE UPLOAD */}
+        <div style={{ marginTop: 12 }}>
+          <input
+            type="file"
+            multiple
+            onChange={(e) => setImages([...e.target.files])}
+            style={{ color: "#fff" }}
+          />
+        </div>
+
+        <button
+          type="submit"
+          style={{
+            marginTop: 15,
+            padding: "10px 14px",
+            background: "#1e4fbf",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+          }}
+        >
+          {uploading ? "Uploading..." : "Add Project"}
+        </button>
+      </form>
+
+      <hr style={{ margin: "20px 0", opacity: 0.2 }} />
+
+      {/* PROJECT LIST */}
+      <h2>All Projects</h2>
+
+      {projects.length === 0 ? (
+        <p>No projects yet.</p>
+      ) : (
+        projects.map((p) => (
+          <div
+            key={p.id}
+            style={{
+              padding: 12,
+              marginBottom: 10,
+              border: "1px solid #333",
+              borderRadius: 6,
+              background: "#161a1f",
+            }}
+          >
+            <b>{p.title}</b> <br />
+            <span style={{ opacity: 0.6 }}>
+              {p.location} • {p.status}
+            </span>
+
+            <br />
+            <button
+              onClick={() => deleteProject(p.id)}
+              style={{
+                marginTop: 6,
+                padding: "4px 10px",
+                background: "red",
+                border: "none",
+                borderRadius: 4,
+                color: "#fff",
+              }}
+            >
+              Delete
+            </button>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
+
+const inputStyle = {
+  padding: 8,
+  borderRadius: 6,
+  background: "#161a1f",
+  border: "1px solid #2c3138",
+  color: "#fff",
+  width: "100%",
+};
