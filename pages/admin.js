@@ -49,8 +49,8 @@ export default function AdminPage() {
     headers: { "Content-Type": file.type }
   });
 
-  // Generate full public URL
-  const publicURL = `https://asxnupuwsoxxnecihhcb.supabase.co/storage/v1/object/public/project-images/${res.path}`;
+  // PUBLIC URL
+  const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_URL.replace("https://","")}/storage/v1/object/public/project-images/${res.path}`;
 
   setUploading(false);
 
@@ -59,24 +59,31 @@ export default function AdminPage() {
 
   // ADD PROJECT
   async function addProject(e) {
-    e.preventDefault();
+  e.preventDefault();
 
-    let imagePaths = [];
+  let imagePaths = [];
 
-    if (images.length > 0) {
-      for (let i = 0; i < images.length; i++) {
-       async function uploadImage(file) {
-  setUploading(true);
+  // upload every selected image
+  if (images.length > 0) {
+    for (let i = 0; i < images.length; i++) {
+      const url = await uploadImage(images[i]);
+      imagePaths.push(url);
+    }
+  }
 
-  const res = await fetch("/api/upload-url", {
-    method: "POST",
-    body: JSON.stringify({ filename: file.name }),
-  }).then((r) => r.json());
+  const payload = {
+    ...form,
+    images: imagePaths,              // array of URLs
+    featured_image: imagePaths[0] || null,
+  };
 
-  await fetch(res.uploadUrl, {
-    method: "PUT",
-    body: file,
-  });
+  await api("/api/projects/create", payload);
+  await loadProjects();
+
+  // Reset form
+  setForm({ title: "", location: "", scope: "", status: "ongoing" });
+  setImages([]);
+}
 
   // Build full public URL
   const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
