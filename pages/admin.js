@@ -13,7 +13,6 @@ export default function AdminPage() {
   const [projects, setProjects] = useState([]);
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
-  const SUPABASE_ID = process.env.asxnupuwsoxxnecihhcb;
 
   // FORM STATE
   const [form, setForm] = useState({
@@ -22,7 +21,6 @@ export default function AdminPage() {
     scope: "",
     status: "ongoing",
   });
-
 
   // LOAD PROJECTS
   async function loadProjects() {
@@ -34,64 +32,43 @@ export default function AdminPage() {
     loadProjects();
   }, []);
 
-  // HANDLE IMAGE UPLOAD
+  // ----------------------------
+  // IMAGE UPLOAD FUNCTION
+  // ----------------------------
   async function uploadImage(file) {
-  setUploading(true);
+    setUploading(true);
 
-  const res = await fetch("/api/upload-url", {
-    method: "POST",
-    body: JSON.stringify({ filename: file.name }),
-  }).then((r) => r.json());
+    const res = await fetch("/api/upload-url", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name }),
+    }).then((r) => r.json());
 
-  await fetch(res.uploadUrl, {
-    method: "PUT",
-    body: file,
-    headers: { "Content-Type": file.type }
-  });
+    await fetch(res.uploadUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type }
+    });
 
-  // PUBLIC URL
-  const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_URL.replace("https://","")}/storage/v1/object/public/project-images/${res.path}`;
+    const publicURL =
+      `https://${process.env.NEXT_PUBLIC_SUPABASE_URL.replace("https://", "")}` +
+      `/storage/v1/object/public/project-images/${res.path}`;
 
-  setUploading(false);
-
-  return publicURL;
-}
-
-  // ADD PROJECT
-  async function addProject(e) {
-  e.preventDefault();
-
-  let imagePaths = [];
-
-  // upload every selected image
-  if (images.length > 0) {
-    for (let i = 0; i < images.length; i++) {
-      const url = await uploadImage(images[i]);
-      imagePaths.push(url);
-    }
+    setUploading(false);
+    return publicURL;
   }
 
-  const payload = {
-    ...form,
-    images: imagePaths,              // array of URLs
-    featured_image: imagePaths[0] || null,
-  };
+  // ----------------------------
+  // ADD PROJECT
+  // ----------------------------
+  async function addProject(e) {
+    e.preventDefault();
 
-  await api("/api/projects/create", payload);
-  await loadProjects();
+    let imagePaths = [];
 
-  // Reset form
-  setForm({ title: "", location: "", scope: "", status: "ongoing" });
-  setImages([]);
-}
-
-  // Build full public URL
-  const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
-
-  setUploading(false);
-
-  return publicURL;
-}
+    if (images.length > 0) {
+      for (let i = 0; i < images.length; i++) {
+        const url = await uploadImage(images[i]);
+        imagePaths.push(url);
       }
     }
 
@@ -104,7 +81,7 @@ export default function AdminPage() {
     await api("/api/projects/create", payload);
     await loadProjects();
 
-    // Reset form
+    // Reset
     setForm({ title: "", location: "", scope: "", status: "ongoing" });
     setImages([]);
   }
@@ -124,6 +101,7 @@ export default function AdminPage() {
 
       {/* ADD PROJECT FORM */}
       <h2>Add New Project</h2>
+
       <form onSubmit={addProject} style={{ marginBottom: 40 }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <input
@@ -158,7 +136,6 @@ export default function AdminPage() {
           <option value="completed">Completed</option>
         </select>
 
-        {/* IMAGE UPLOAD */}
         <div style={{ marginTop: 12 }}>
           <input
             type="file"
@@ -236,3 +213,4 @@ const inputStyle = {
   color: "#fff",
   width: "100%",
 };
+
