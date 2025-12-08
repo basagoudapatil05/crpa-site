@@ -36,23 +36,26 @@ export default function AdminPage() {
 
   // HANDLE IMAGE UPLOAD
   async function uploadImage(file) {
-    setUploading(true);
+  setUploading(true);
 
-    // Request signed upload URL
-    const res = await fetch("/api/upload-url", {
-      method: "POST",
-      body: JSON.stringify({ filename: file.name }),
-    }).then((r) => r.json());
+  const res = await fetch("/api/upload-url", {
+    method: "POST",
+    body: JSON.stringify({ filename: file.name }),
+  }).then((r) => r.json());
 
-    // Upload to Supabase via PUT
-    await fetch(res.uploadUrl, {
-      method: "PUT",
-      body: file,
-    });
+  await fetch(res.uploadUrl, {
+    method: "PUT",
+    body: file,
+    headers: { "Content-Type": file.type }
+  });
 
-    setUploading(false);
-    return res.path; // Return storage path
-  }
+  // Generate full public URL
+  const publicURL = `https://asxnupuwsoxxnecihhcb.supabase.co/storage/v1/object/public/project-images/${res.path}`;
+
+  setUploading(false);
+
+  return publicURL;
+}
 
   // ADD PROJECT
   async function addProject(e) {
