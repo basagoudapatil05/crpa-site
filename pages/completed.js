@@ -1,43 +1,28 @@
 import Head from "next/head";
 import Header from "../components/Header";
-import { useState } from "react";
 import ProjectCard from "../components/ProjectCard";
-
-const completed = [
-  {
-    id: 201,
-    name: "Premium Residence – Belagavi",
-    location: "Belagavi",
-    type: "Residential",
-    images: ["/images/PHOTO-2025-08-05-12-55-50 (2).jpg"],
-    scope: "Design + Build",
-  },
-  {
-    id: 202,
-    name: "Institutional Block – Hubli",
-    location: "Hubli",
-    type: "Institutional",
-    images: ["/images/CBSC SCHOOL [6875]_2024-04-10.jpg"],
-    scope: "Institutional",
-  },
-  {
-    id: 203,
-    name: "Commercial Outlet – Dharwad",
-    location: "Dharwad",
-    type: "Commercial",
-    images: ["/images/1000.jpg"],
-    scope: "Commercial Structure",
-  }
-];
+import { useEffect, useState } from "react";
 
 export default function CompletedProjects() {
-  const [filter, setFilter] = useState("All");
+  const [projects, setProjects] = useState([]);
   const [lightbox, setLightbox] = useState(null);
+  const [filter, setFilter] = useState("All");
 
+  // Replace with your Supabase ID
+  const SUPABASE_ID = "asxnupuwsoxxnecihhcb";
+
+  // Load all completed projects
+  useEffect(() => {
+    fetch("/api/projects/list?status=completed")
+      .then((r) => r.json())
+      .then((data) => setProjects(data));
+  }, []);
+
+  // Filter by type
   const filtered =
     filter === "All"
-      ? completed
-      : completed.filter((p) => p.type === filter);
+      ? projects
+      : projects.filter((p) => p.scope?.toLowerCase().includes(filter.toLowerCase()));
 
   return (
     <>
@@ -49,19 +34,22 @@ export default function CompletedProjects() {
 
       <main className="container" style={{ paddingTop: 20 }}>
         <h2>Completed Projects</h2>
-        <p style={{ color: "var(--muted)" }}>
-          Over <b>1200+ Residential</b> and <b>200+ Commercial</b> structures in 30+ years.
+        <p style={{ opacity: 0.7 }}>
+          Over <b>1200+ Residential</b> and <b>200+ Commercial</b> structures delivered across Karnataka.
         </p>
 
+        {/* FILTER BUTTONS */}
         <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
           {["All", "Residential", "Commercial", "Institutional"].map((btn) => (
             <button
               key={btn}
               onClick={() => setFilter(btn)}
-              className="card"
               style={{
-                background: filter === btn ? "var(--accent)" : "var(--card)",
-                color: filter === btn ? "white" : "var(--text)",
+                padding: "6px 14px",
+                borderRadius: 6,
+                border: "1px solid #333",
+                background: filter === btn ? "#1e4fbf" : "#161a1f",
+                color: filter === btn ? "#fff" : "#ccc",
               }}
             >
               {btn}
@@ -69,17 +57,25 @@ export default function CompletedProjects() {
           ))}
         </div>
 
+        {/* PROJECT GRID */}
         <div className="grid">
-          {filtered.map((p) => (
-            <ProjectCard
-              key={p.id}
-              p={p}
-              onOpen={(img) => setLightbox(img)}
-            />
-          ))}
+          {filtered.map((p) => {
+            const firstImage = p.images?.length
+              ? `https://${SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${p.images[0]}`
+              : "/images/placeholder.jpg";
+
+            return (
+              <ProjectCard
+                key={p.id}
+                p={{ ...p, images: [firstImage] }}
+                onOpen={() => setLightbox(firstImage)}
+              />
+            );
+          })}
         </div>
       </main>
 
+      {/* LIGHTBOX */}
       {lightbox && (
         <div
           className="lightbox-backdrop"
@@ -91,3 +87,4 @@ export default function CompletedProjects() {
     </>
   );
 }
+
