@@ -11,7 +11,9 @@ async function api(path, body = null) {
 
 export default function AdminPage() {
   const [projects, setProjects] = useState([]);
+  const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const SUPABASE_ID = process.env.asxnupuwsoxxnecihhcb;
 
   // FORM STATE
   const [form, setForm] = useState({
@@ -61,8 +63,26 @@ export default function AdminPage() {
 
     if (images.length > 0) {
       for (let i = 0; i < images.length; i++) {
-        const p = await uploadImage(images[i]);
-        imagePaths.push(p);
+       async function uploadImage(file) {
+  setUploading(true);
+
+  const res = await fetch("/api/upload-url", {
+    method: "POST",
+    body: JSON.stringify({ filename: file.name }),
+  }).then((r) => r.json());
+
+  await fetch(res.uploadUrl, {
+    method: "PUT",
+    body: file,
+  });
+
+  // Build full public URL
+  const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
+
+  setUploading(false);
+
+  return publicURL;
+}
       }
     }
 
