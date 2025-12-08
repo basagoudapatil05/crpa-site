@@ -29,7 +29,7 @@ export default function OngoingProjects() {
           {projects.map((p) => {
             const firstImage =
               p.images?.length > 0
-                ? `https://YOUR_PROJECT_ID.supabase.co/storage/v1/object/public/project-images/${p.images[0]}`
+                ? `https://asxnupuwsoxxnecihhcb.supabase.co/storage/v1/object/public/project-images/${p.images[0]}`
                 : "/images/placeholder.jpg";
 
             return (
