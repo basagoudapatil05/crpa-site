@@ -1,5 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
@@ -7,7 +13,8 @@ const supabase = createClient(
 
 export default async function handler(req, res) {
   try {
-    const body = JSON.parse(req.body);
+    // Next.js already parses req.body automatically
+    const body = req.body;
 
     const { data, error } = await supabase
       .from("projects")
@@ -16,7 +23,7 @@ export default async function handler(req, res) {
         location: body.location,
         scope: body.scope,
         status: body.status,
-        images: body.images,     // must be an array!
+        images: body.images, // array of URLs
       });
 
     if (error) {
