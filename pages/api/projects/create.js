@@ -1,26 +1,33 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end()
-
   try {
-    const project = JSON.parse(req.body)
+    const body = JSON.parse(req.body);
 
     const { data, error } = await supabase
-      .from('projects')
-      .insert([project])
-      .select()
-      .single()
+      .from("projects")
+      .insert({
+        title: body.title,
+        location: body.location,
+        scope: body.scope,
+        status: body.status,
+        images: body.images,     // must be an array!
+      });
 
-    if (error) return res.status(500).json({ error })
+    if (error) {
+      console.error("Supabase insert error:", error);
+      return res.status(500).json({ error: error.message });
+    }
 
-    return res.status(200).json(data)
+    return res.status(200).json({ success: true });
   } catch (err) {
-    return res.status(500).json({ error: err.message })
+    console.error("Create API crashed:", err);
+    res.status(500).json({ error: "Server crashed" });
   }
 }
+
