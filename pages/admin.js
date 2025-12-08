@@ -23,7 +23,6 @@ export default function AdminPage() {
     status: "ongoing",
   });
 
-  const [images, setImages] = useState([]);
 
   // LOAD PROJECTS
   async function loadProjects() {
