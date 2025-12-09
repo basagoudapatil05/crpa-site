@@ -1,0 +1,53 @@
+.container {
+  padding: 30px;
+  min-height: 100vh;
+  background: #0f1114;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.loginWrapper {
+  padding: 40px;
+  min-height: 100vh;
+  background: #0f1114;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+}
+
+.loginWrapper input {
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  border: 1px solid #2c3138;
+  background: #161a1f;
+  color: white;
+}
+
+.loginWrapper button {
+  padding: 10px 16px;
+  background: #1e4fbf;
+  border: none;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+}
+
+.projectCard {
+  padding: 15px;
+  background: #161a1f;
+  border: 1px solid #2c3138;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.projectCard button {
+  background: red;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+}
