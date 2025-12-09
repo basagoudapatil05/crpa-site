@@ -11,12 +11,11 @@ async function api(path, body = null) {
 
 export default function AdminPage() {
   // ----------------------------
-  // AUTH STATE
+  // PASSWORD PROTECTION
   // ----------------------------
   const [authorized, setAuthorized] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
 
-  // Check password
   function verifyPassword() {
     if (passwordInput === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setAuthorized(true);
@@ -25,7 +24,7 @@ export default function AdminPage() {
     }
   }
 
-  // If not authorized → show login screen
+  // LOGIN PAGE
   if (!authorized) {
     return (
       <div
@@ -40,6 +39,7 @@ export default function AdminPage() {
         }}
       >
         <h2>Admin Login</h2>
+
         <input
           type="password"
           placeholder="Enter admin password"
@@ -54,6 +54,7 @@ export default function AdminPage() {
             color: "#fff",
           }}
         />
+
         <button
           onClick={verifyPassword}
           style={{
@@ -70,6 +71,7 @@ export default function AdminPage() {
       </div>
     );
   }
+
 import { useEffect, useState } from "react";
 
 // API helper
