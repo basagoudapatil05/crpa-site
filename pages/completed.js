@@ -1,87 +1,87 @@
-import Head from "next/head";
+import { useState, useEffect } from "react";
 import Header from "../components/Header";
-import ProjectCard from "../components/ProjectCard";
-import { useEffect, useState } from "react";
 
 export default function CompletedProjects() {
   const [projects, setProjects] = useState([]);
   const [lightbox, setLightbox] = useState(null);
-  const [filter, setFilter] = useState("All");
 
-  // Replace with your Supabase ID
-  const SUPABASE_ID = "asxnupuwsoxxnecihhcb";
+  async function loadProjects() {
+    const res = await fetch("/api/projects/list").then((r) => r.json());
+    const filtered = res.filter((p) => p.status === "completed");
+    setProjects(filtered);
+  }
 
-  // Load all completed projects
   useEffect(() => {
-    fetch("/api/projects/list?status=completed")
-      .then((r) => r.json())
-      .then((data) => setProjects(data));
+    loadProjects();
   }, []);
-
-  // Filter by type
-  const filtered =
-    filter === "All"
-      ? projects
-      : projects.filter((p) => p.scope?.toLowerCase().includes(filter.toLowerCase()));
 
   return (
     <>
-      <Head>
-        <title>Completed Projects • C. R. Patil & Associates</title>
-      </Head>
-
       <Header />
 
-      <main className="container" style={{ paddingTop: 20 }}>
-        <h2>Completed Projects</h2>
-        <p style={{ opacity: 0.7 }}>
-          Over <b>1200+ Residential</b> and <b>200+ Commercial</b> structures delivered across Karnataka.
-        </p>
+      <main style={{ padding: 30, color: "#fff" }}>
+        <h1>Completed Projects</h1>
 
-        {/* FILTER BUTTONS */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-          {["All", "Residential", "Commercial", "Institutional"].map((btn) => (
-            <button
-              key={btn}
-              onClick={() => setFilter(btn)}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: 20,
+            marginTop: 20,
+          }}
+        >
+          {projects.map((p) => (
+            <div
+              key={p.id}
               style={{
-                padding: "6px 14px",
-                borderRadius: 6,
-                border: "1px solid #333",
-                background: filter === btn ? "#1e4fbf" : "#161a1f",
-                color: filter === btn ? "#fff" : "#ccc",
+                background: "#161a1f",
+                padding: 15,
+                borderRadius: 8,
+                border: "1px solid #262b32",
               }}
             >
-              {btn}
-            </button>
+              {p.featured_image && (
+                <img
+                  src={p.featured_image}
+                  style={{
+                    width: "100%",
+                    height: 180,
+                    objectFit: "cover",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setLightbox(p.featured_image)}
+                />
+              )}
+
+              <h3 style={{ marginTop: 10 }}>{p.title}</h3>
+              <p style={{ opacity: 0.7 }}>{p.location}</p>
+              <p style={{ fontSize: 14, color: "#9ca3af" }}>{p.scope}</p>
+            </div>
           ))}
-        </div>
-
-        {/* PROJECT GRID */}
-        <div className="grid">
-          {filtered.map((p) => {
-            const firstImage = p.images?.length
-              ? `https://${SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${p.images[0]}`
-              : "/images/placeholder.jpg";
-
-            return (
-              <ProjectCard
-                key={p.id}
-                p={{ ...p, images: [firstImage] }}
-                onOpen={() => setLightbox(firstImage)}
-              />
-            );
-          })}
         </div>
       </main>
 
-      {/* LIGHTBOX */}
       {lightbox && (
         <div
-          className="lightbox-backdrop"
           onClick={() => setLightbox(null)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
         >
-          <img className="lightbox-img" src={lightbox} />
+          <img
+            src={lightbox}
+            style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 8 }}
+          />
         </div>
       )}
     </>
