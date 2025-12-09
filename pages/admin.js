@@ -8,7 +8,6 @@ async function api(path, body = null) {
     body: body ? JSON.stringify(body) : null,
   }).then((r) => r.json());
 }
-
 export default function AdminPage() {
   // ----------------------------
   // LOGIN PROTECTION
