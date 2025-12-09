@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 
 // API helper
 async function api(path, body = null) {
@@ -11,7 +11,7 @@ async function api(path, body = null) {
 
 export default function AdminPage() {
   // ----------------------------
-  // PASSWORD PROTECTION
+  // LOGIN PROTECTION
   // ----------------------------
   const [authorized, setAuthorized] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
@@ -24,7 +24,7 @@ export default function AdminPage() {
     }
   }
 
-  // LOGIN PAGE
+  // LOGIN SCREEN
   if (!authorized) {
     return (
       <div
@@ -72,23 +72,13 @@ export default function AdminPage() {
     );
   }
 
-import { useEffect, useState } from "react";
-
-// API helper
-async function api(path, body = null) {
-  return fetch(path, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: body ? JSON.stringify(body) : null,
-  }).then((r) => r.json());
-}
-
-export default function AdminPage() {
+  // ----------------------------
+  // ADMIN DASHBOARD STATE
+  // ----------------------------
   const [projects, setProjects] = useState([]);
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
 
-  // FORM STATE
   const [form, setForm] = useState({
     title: "",
     location: "",
@@ -96,7 +86,7 @@ export default function AdminPage() {
     status: "ongoing",
   });
 
-  // LOAD PROJECTS
+  // Load projects
   async function loadProjects() {
     const res = await fetch("/api/projects/list").then((r) => r.json());
     setProjects(res);
@@ -106,9 +96,7 @@ export default function AdminPage() {
     loadProjects();
   }, []);
 
-  // ----------------------------
-  // IMAGE UPLOAD FUNCTION
-  // ----------------------------
+  // Upload image
   async function uploadImage(file) {
     setUploading(true);
 
@@ -120,60 +108,63 @@ export default function AdminPage() {
     await fetch(res.uploadUrl, {
       method: "PUT",
       body: file,
-      headers: { "Content-Type": file.type }
+      headers: { "Content-Type": file.type },
     });
 
-    const publicURL =
-      `https://${process.env.NEXT_PUBLIC_SUPABASE_URL.replace("https://", "")}` +
-      `/storage/v1/object/public/project-images/${res.path}`;
+    const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
 
     setUploading(false);
     return publicURL;
   }
 
-  // ----------------------------
-  // ADD PROJECT
-  // ----------------------------
+  // Add project
   async function addProject(e) {
     e.preventDefault();
 
-    let imagePaths = [];
+    let uploadedImages = [];
 
-    if (images.length > 0) {
-      for (let i = 0; i < images.length; i++) {
-        const url = await uploadImage(images[i]);
-        imagePaths.push(url);
-      }
+    for (let file of images) {
+      const url = await uploadImage(file);
+      uploadedImages.push(url);
     }
 
     const payload = {
       ...form,
-      images: imagePaths,
-      featured_image: imagePaths[0] || null,
+      images: uploadedImages,
+      featured_image: uploadedImages[0] || null,
     };
 
     await api("/api/projects/create", payload);
     await loadProjects();
 
-    // Reset
     setForm({ title: "", location: "", scope: "", status: "ongoing" });
     setImages([]);
   }
 
-  // DELETE PROJECT
+  // Delete project
   async function deleteProject(id) {
     await api("/api/projects/delete", { id });
     await loadProjects();
   }
 
+  // ----------------------------
+  // DASHBOARD UI
+  // ----------------------------
   return (
-    <div style={{ padding: 30, fontFamily: "Arial", color: "#fff", background: "#0f1114", minHeight: "100vh" }}>
+    <div
+      style={{
+        padding: 30,
+        fontFamily: "Arial",
+        color: "#fff",
+        background: "#0f1114",
+        minHeight: "100vh",
+      }}
+    >
       <h1>CRPA Admin Dashboard</h1>
       <p style={{ opacity: 0.7 }}>Manage all projects here.</p>
 
       <hr style={{ margin: "20px 0", opacity: 0.2 }} />
 
-      {/* ADD PROJECT FORM */}
       <h2>Add New Project</h2>
 
       <form onSubmit={addProject} style={{ marginBottom: 40 }}>
@@ -185,6 +176,7 @@ export default function AdminPage() {
             required
             style={inputStyle}
           />
+
           <input
             placeholder="Location"
             value={form.location}
@@ -236,45 +228,41 @@ export default function AdminPage() {
 
       <hr style={{ margin: "20px 0", opacity: 0.2 }} />
 
-      {/* PROJECT LIST */}
       <h2>All Projects</h2>
 
-      {projects.length === 0 ? (
-        <p>No projects yet.</p>
-      ) : (
-        projects.map((p) => (
-          <div
-            key={p.id}
+      {projects.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            padding: 12,
+            marginBottom: 10,
+            border: "1px solid #333",
+            borderRadius: 6,
+            background: "#161a1f",
+          }}
+        >
+          <b>{p.title}</b>
+          <br />
+          <span style={{ opacity: 0.6 }}>
+            {p.location} • {p.status}
+          </span>
+          <br />
+
+          <button
+            onClick={() => deleteProject(p.id)}
             style={{
-              padding: 12,
-              marginBottom: 10,
-              border: "1px solid #333",
-              borderRadius: 6,
-              background: "#161a1f",
+              marginTop: 6,
+              padding: "4px 10px",
+              background: "red",
+              border: "none",
+              borderRadius: 4,
+              color: "#fff",
             }}
           >
-            <b>{p.title}</b> <br />
-            <span style={{ opacity: 0.6 }}>
-              {p.location} • {p.status}
-            </span>
-
-            <br />
-            <button
-              onClick={() => deleteProject(p.id)}
-              style={{
-                marginTop: 6,
-                padding: "4px 10px",
-                background: "red",
-                border: "none",
-                borderRadius: 4,
-                color: "#fff",
-              }}
-            >
-              Delete
-            </button>
-          </div>
-        ))
-      )}
+            Delete
+          </button>
+        </div>
+      ))}
     </div>
   );
 }
