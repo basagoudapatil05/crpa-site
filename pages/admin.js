@@ -10,6 +10,78 @@ async function api(path, body = null) {
 }
 
 export default function AdminPage() {
+  // ----------------------------
+  // AUTH STATE
+  // ----------------------------
+  const [authorized, setAuthorized] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+
+  // Check password
+  function verifyPassword() {
+    if (passwordInput === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+      setAuthorized(true);
+    } else {
+      alert("Incorrect password");
+    }
+  }
+
+  // If not authorized → show login screen
+  if (!authorized) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#0f1114",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          color: "#fff",
+        }}
+      >
+        <h2>Admin Login</h2>
+        <input
+          type="password"
+          placeholder="Enter admin password"
+          value={passwordInput}
+          onChange={(e) => setPasswordInput(e.target.value)}
+          style={{
+            padding: 10,
+            marginTop: 12,
+            borderRadius: 6,
+            background: "#161a1f",
+            border: "1px solid #333",
+            color: "#fff",
+          }}
+        />
+        <button
+          onClick={verifyPassword}
+          style={{
+            marginTop: 12,
+            padding: "10px 14px",
+            background: "#1e4fbf",
+            border: "none",
+            borderRadius: 6,
+            color: "#fff",
+          }}
+        >
+          Login
+        </button>
+      </div>
+    );
+  }
+import { useEffect, useState } from "react";
+
+// API helper
+async function api(path, body = null) {
+  return fetch(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : null,
+  }).then((r) => r.json());
+}
+
+export default function AdminPage() {
   const [projects, setProjects] = useState([]);
   const [images, setImages] = useState([]);
   const [uploading, setUploading] = useState(false);
