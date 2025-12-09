@@ -145,11 +145,61 @@ export default function Admin() {
           <option value="completed">Completed</option>
         </select>
 
-        <input
-          type="file"
-          multiple
-          onChange={(e) => setImages([...e.target.files])}
-        />
+        {/* IMAGE UPLOAD WITH PREVIEW */}
+<div style={{ marginTop: 12 }}>
+  <input
+    type="file"
+    multiple
+    accept="image/*"
+    onChange={(e) => {
+      const files = Array.from(e.target.files);
+      setImages(files);
+    }}
+    style={{ color: "#fff" }}
+  />
+
+  {/* Preview thumbnails */}
+  {images.length > 0 && (
+    <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
+      {images.map((file, i) => (
+        <div key={i} style={{ position: "relative" }}>
+          <img
+            src={URL.createObjectURL(file)}
+            style={{
+              width: 90,
+              height: 90,
+              objectFit: "cover",
+              borderRadius: 6,
+              border: "1px solid #333",
+            }}
+          />
+
+          {/* Remove button */}
+          <button
+            onClick={() =>
+              setImages(images.filter((_, idx) => idx !== i))
+            }
+            style={{
+              position: "absolute",
+              top: -8,
+              right: -8,
+              background: "red",
+              color: "#fff",
+              border: "none",
+              borderRadius: "50%",
+              width: 22,
+              height: 22,
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
+
 
         <button type="submit">
           {uploading ? "Uploading..." : "Add Project"}
