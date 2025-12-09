@@ -1,57 +1,89 @@
-import Head from "next/head";
+import { useState, useEffect } from "react";
 import Header from "../components/Header";
-import ProjectCard from "../components/ProjectCard";
-import { useEffect, useState } from "react";
 
 export default function UpcomingProjects() {
   const [projects, setProjects] = useState([]);
   const [lightbox, setLightbox] = useState(null);
 
-  useEffect(() => {
-    fetch("/api/projects/list?status=upcoming")
-      .then((r) => r.json())
-      .then((data) => setProjects(data));
-  }, []);
+  async function loadProjects() {
+    const res = await fetch("/api/projects/list").then((r) => r.json());
+    const filtered = res.filter((p) => p.status === "upcoming");
+    setProjects(filtered);
+  }
 
-  // Replace with your Supabase project ID
-  const SUPABASE_ID = "asxnupuwsoxxnecihhcb";
+  useEffect(() => {
+    loadProjects();
+  }, []);
 
   return (
     <>
-      <Head>
-        <title>Upcoming Projects • C. R. Patil & Associates</title>
-      </Head>
-
       <Header />
+      <main style={{ padding: 30, color: "#fff" }}>
+        <h1>Upcoming Projects</h1>
 
-      <main className="container" style={{ paddingTop: 20 }}>
-        <h2>Upcoming Projects</h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: 20,
+            marginTop: 20,
+          }}
+        >
+          {projects.map((p) => (
+            <div
+              key={p.id}
+              style={{
+                background: "#161a1f",
+                padding: 15,
+                borderRadius: 8,
+                border: "1px solid #262b32",
+              }}
+            >
+              {p.featured_image && (
+                <img
+                  src={p.featured_image}
+                  style={{
+                    width: "100%",
+                    height: 180,
+                    objectFit: "cover",
+                    borderRadius: 8,
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setLightbox(p.featured_image)}
+                />
+              )}
 
-        <div className="grid">
-          {projects.map((p) => {
-            const firstImage = p.images?.length
-              ? `https://${SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${p.images[0]}`
-              : "/images/placeholder.jpg";
-
-            return (
-              <ProjectCard
-                key={p.id}
-                p={{ ...p, images: [firstImage] }}
-                onOpen={() => setLightbox(firstImage)}
-              />
-            );
-          })}
+              <h3 style={{ marginTop: 10 }}>{p.title}</h3>
+              <p style={{ opacity: 0.7 }}>{p.location}</p>
+              <p style={{ fontSize: 14, color: "#9ca3af" }}>{p.scope}</p>
+            </div>
+          ))}
         </div>
       </main>
 
       {lightbox && (
         <div
-          className="lightbox-backdrop"
           onClick={() => setLightbox(null)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            background: "rgba(0,0,0,0.85)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+          }}
         >
-          <img className="lightbox-img" src={lightbox} />
+          <img
+            src={lightbox}
+            style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 8 }}
+          />
         </div>
       )}
     </>
   );
 }
+
