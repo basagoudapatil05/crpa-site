@@ -95,7 +95,7 @@ export default function Admin() {
   }
 
   // LOGIN SCREEN
-  if (!authenticated) {<p style={{ color:'#bbb' }}>DEBUG PUBLIC PW (length): { (process.env.NEXT_PUBLIC_ADMIN_PASSWORD || '').length }</p>
+  if (!authenticated) {
     return (
       <div className={styles.loginWrapper}>
         <h1>Admin Login</h1>
