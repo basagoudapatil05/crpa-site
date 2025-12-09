@@ -1,25 +1,31 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).end()
-
   try {
-    const { id } = JSON.parse(req.body)
+    const { id } = JSON.parse(req.body);
+
+    if (!id) {
+      return res.status(400).json({ error: "Missing project ID" });
+    }
 
     const { error } = await supabase
-      .from('projects')
+      .from("projects")
       .delete()
-      .eq('id', id)
+      .eq("id", id);
 
-    if (error) return res.status(500).json({ error })
+    if (error) {
+      console.error("Delete error:", error);
+      return res.status(500).json({ error: error.message });
+    }
 
-    res.status(200).json({ ok: true })
+    return res.status(200).json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message })
+    console.error("Delete crashed:", err);
+    res.status(500).json({ error: "Server crashed" });
   }
 }
