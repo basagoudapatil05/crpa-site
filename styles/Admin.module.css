@@ -1,53 +1,56 @@
 .container {
   padding: 30px;
-  min-height: 100vh;
   background: #0f1114;
-  color: white;
+  min-height: 100vh;
+  color: #fff;
   font-family: Arial, sans-serif;
 }
 
 .loginWrapper {
-  padding: 40px;
-  min-height: 100vh;
-  background: #0f1114;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  min-height: 100vh;
+  background: #0f1114;
   color: white;
 }
 
 .loginWrapper input {
   padding: 10px;
-  margin-bottom: 10px;
+  margin-top: 10px;
+  width: 250px;
   border-radius: 6px;
-  border: 1px solid #2c3138;
   background: #161a1f;
   color: white;
+  border: 1px solid #2c3138;
 }
 
 .loginWrapper button {
+  margin-top: 10px;
   padding: 10px 16px;
   background: #1e4fbf;
+  color: white;
   border: none;
   border-radius: 6px;
-  color: white;
   cursor: pointer;
 }
 
 .projectCard {
-  padding: 15px;
   background: #161a1f;
   border: 1px solid #2c3138;
+  padding: 15px;
   border-radius: 6px;
   margin-bottom: 12px;
 }
 
 .projectCard button {
+  margin-top: 8px;
+  padding: 6px 12px;
   background: red;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
   color: white;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
 }
+
