@@ -16,9 +16,10 @@ export default function Admin() {
   const [uploading, setUploading] = useState(false);
   const [projects, setProjects] = useState([]);
 
-  // CHECK PASSWORD
+  // LOGIN
   function handleLogin(e) {
     e.preventDefault();
+
     if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
       setAuthenticated(true);
     } else {
@@ -26,9 +27,10 @@ export default function Admin() {
     }
   }
 
-  // FETCH ALL PROJECTS
+  // LOAD PROJECTS
   async function loadProjects() {
-    const data = await fetch("/api/projects/list").then((r) => r.json());
+    const res = await fetch("/api/projects/list");
+    const data = await res.json();
     setProjects(data);
   }
 
@@ -42,18 +44,21 @@ export default function Admin() {
 
     const res = await fetch("/api/upload-url", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filename: file.name }),
-    }).then((r) => r.json());
+    }).then(r => r.json());
 
     await fetch(res.uploadUrl, {
       method: "PUT",
-      body: file,
       headers: { "Content-Type": file.type },
+      body: file,
     });
 
-    const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
+    const publicURL =
+      `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
 
     setUploading(false);
+
     return publicURL;
   }
 
@@ -61,21 +66,24 @@ export default function Admin() {
   async function addProject(e) {
     e.preventDefault();
 
-    let uploaded = [];
+    let uploadedImages = [];
 
-    for (let img of images) {
-      const url = await uploadImage(img);
-      uploaded.push(url);
+    if (images.length > 0) {
+      for (let file of images) {
+        const url = await uploadImage(file);
+        uploadedImages.push(url);
+      }
     }
 
     const payload = {
       ...form,
-      images: uploaded,
-      featured_image: uploaded[0] || null,
+      images: uploadedImages,
+      featured_image: uploadedImages[0] || null,
     };
 
     await fetch("/api/projects/create", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
@@ -88,10 +96,17 @@ export default function Admin() {
   async function deleteProject(id) {
     await fetch("/api/projects/delete", {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
 
     loadProjects();
+  }
+
+  // LOGOUT
+  function logout() {
+    setAuthenticated(false);
+    setPassword("");
   }
 
   // LOGIN SCREEN
@@ -112,12 +127,17 @@ export default function Admin() {
     );
   }
 
-  // DASHBOARD
+  // ADMIN DASHBOARD
   return (
     <div className={styles.container}>
       <h1>CRPA Admin Dashboard</h1>
 
+      <button onClick={logout} className={styles.logoutBtn}>
+        Logout
+      </button>
+
       <h2>Add New Project</h2>
+
       <form onSubmit={addProject}>
         <input
           placeholder="Project Title"
@@ -125,11 +145,13 @@ export default function Admin() {
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           required
         />
+
         <input
           placeholder="Location"
           value={form.location}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
         />
+
         <input
           placeholder="Scope"
           value={form.scope}
@@ -145,61 +167,23 @@ export default function Admin() {
           <option value="completed">Completed</option>
         </select>
 
-        {/* IMAGE UPLOAD WITH PREVIEW */}
-<div style={{ marginTop: 12 }}>
-  <input
-    type="file"
-    multiple
-    accept="image/*"
-    onChange={(e) => {
-      const files = Array.from(e.target.files);
-      setImages(files);
-    }}
-    style={{ color: "#fff" }}
-  />
+        {/* IMAGE PREVIEW */}
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => setImages([...e.target.files])}
+        />
 
-  {/* Preview thumbnails */}
-  {images.length > 0 && (
-    <div style={{ display: "flex", gap: 12, marginTop: 12, flexWrap: "wrap" }}>
-      {images.map((file, i) => (
-        <div key={i} style={{ position: "relative" }}>
-          <img
-            src={URL.createObjectURL(file)}
-            style={{
-              width: 90,
-              height: 90,
-              objectFit: "cover",
-              borderRadius: 6,
-              border: "1px solid #333",
-            }}
-          />
-
-          {/* Remove button */}
-          <button
-            onClick={() =>
-              setImages(images.filter((_, idx) => idx !== i))
-            }
-            style={{
-              position: "absolute",
-              top: -8,
-              right: -8,
-              background: "red",
-              color: "#fff",
-              border: "none",
-              borderRadius: "50%",
-              width: 22,
-              height: 22,
-              cursor: "pointer",
-            }}
-          >
-            ×
-          </button>
+        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+          {images.map((file, i) => (
+            <img
+              key={i}
+              src={URL.createObjectURL(file)}
+              style={{ width: 80, height: 80, objectFit: "cover" }}
+            />
+          ))}
         </div>
-      ))}
-    </div>
-  )}
-</div>
-
 
         <button type="submit">
           {uploading ? "Uploading..." : "Add Project"}
@@ -207,13 +191,16 @@ export default function Admin() {
       </form>
 
       <h2>All Projects</h2>
+
       {projects.map((p) => (
         <div key={p.id} className={styles.projectCard}>
           <b>{p.title}</b>
           <p>{p.location} • {p.status}</p>
+
           <button onClick={() => deleteProject(p.id)}>Delete</button>
         </div>
       ))}
     </div>
   );
 }
+
