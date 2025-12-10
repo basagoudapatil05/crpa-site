@@ -31,3 +31,15 @@ export default async function handler(req, res) {
   }
 }
 
+<select
+  value={form.category}
+  onChange={(e) => setForm({ ...form, category: e.target.value })}
+>
+  <option value="residence">Residence</option>
+  <option value="hotel">Hotel</option>
+  <option value="school">School</option>
+  <option value="temple">Temple</option>
+  <option value="commercial">Commercial</option>
+  <option value="farmhouse">Farmhouse</option>
+  <option value="office">Office</option>
+</select>
