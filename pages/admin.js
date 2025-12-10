@@ -212,21 +212,28 @@ async function deleteProject(id) {
     </p>
 
     {/* IMAGE PREVIEW */}
-    {p.images && p.images.length > 0 && (
-      <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-        {p.images.map((img, i) => (
-          <img
-            key={i}
-            src={img}
-            style={{
-              width: 80,
-              height: 80,
-              objectFit: "cover",
-              borderRadius: 6,
-              border: "1px solid #333",
-            }}
-          />
-        ))}
+  const images = Array.isArray(p.images)
+  ? p.images
+  : JSON.parse(p.images || "[]");
+
+{images.length > 0 && (
+  <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+    {images.map((img, i) => (
+      <img
+        key={i}
+        src={img}
+        style={{
+          width: 80,
+          height: 80,
+          objectFit: "cover",
+          borderRadius: 6,
+          border: "1px solid #333",
+        }}
+      />
+    ))}
+  </div>
+)}
+
       </div>
     )}
 
