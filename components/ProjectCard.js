@@ -16,21 +16,22 @@ export default function ProjectCard({ p }) {
       }}
     >
       {/* IMAGE (if exists) */}
-      {p.images && p.images.length > 0 && (
-        <img
-          src={p.images[0]}
-          alt={p.title}
-          style={{
-            width: "100%",
-            height: 220,
-            objectFit: "cover",
-            borderRadius: 6,
-            cursor: "pointer",
-            marginBottom: 12,
-          }}
-          onClick={() => setLightbox(p.images[0])}
-        />
-      )}
+      const images = Array.isArray(p.images)
+  ? p.images
+  : JSON.parse(p.images || "[]");
+
+{images.map((img, i) => (
+  <img
+    key={i}
+    src={img}
+    style={{
+      width: "100%",
+      height: "200px",
+      objectFit: "cover",
+      borderRadius: 8,
+    }}
+  />
+))}
 
       {/* TITLE */}
       <h3 style={{ margin: 0, fontSize: 20 }}>{p.title}</h3>
