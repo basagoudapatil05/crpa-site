@@ -99,16 +99,19 @@ function Admin() {
     loadProjects();
   }
 
-  // ---------------- DELETE ----------------
-  async function deleteProject(id) {
-    await fetch("/api/projects/delete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
+  // DELETE PROJECT
+async function deleteProject(id) {
+  await fetch("/api/projects/delete", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ id }),
+  });
 
-    loadProjects();
-  }
+  loadProjects();
+}
+
 
   // ---------------- LOGIN SCREEN ----------------
   if (!authenticated) {
