@@ -1,248 +1,144 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { createClient } from "@supabase/supabase-js";
+import dynamic from "next/dynamic";
 
-export default function Admin() {
-  const [password, setPassword] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
+function Admin() {
   const [projects, setProjects] = useState([]);
-  const [images, setImages] = useState([]);
-  const [uploading, setUploading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
-    title: "",
-    location: "",
-    scope: "",
-    category: "residence",
-    status: "ongoing",
-  });
+  const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
+  const [scope, setScope] = useState("");
+  const [category, setCategory] = useState("Residence");
+  const [status, setStatus] = useState("ongoing");
+  const [files, setFiles] = useState([]);
 
-  // LOGIN
-  function login(e) {
-    e.preventDefault();
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      setLoggedIn(true);
-      loadProjects();
-    } else {
-      alert("Incorrect password");
-    }
+  // -------------------------
+  // FETCH PROJECTS
+  // -------------------------
+  async function fetchProjects() {
+    const { data } = await supabase
+      .from("projects")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    setProjects(data || []);
   }
 
-  function logout() {
-    setLoggedIn(false);
-    setPassword("");
-  }
+  useEffect(() => {
+    fetchProjects();
+  }, []);
 
-  // LOAD PROJECTS
-  async function loadProjects() {
-    const res = await fetch("/api/projects/list");
-    const data = await res.json();
-    setProjects(Array.isArray(data) ? data : []);
-  }
+  // -------------------------
+  // IMAGE UPLOAD FUNCTION (FIXED)
+  // -------------------------
+  async function uploadImage(file) {
+    const fileName = `${Date.now()}-${file.name}`;
 
-  // UPLOAD SINGLE IMAGE
-  async function handleAddProject(e) {
-  e.preventDefault();
-  setUploading(true);
+    const { error } = await supabase.storage
+      .from("project-images")
+      .upload(fileName, file);
 
-  try {
-    const uploadedImages = [];
-
-    for (const file of images) {
-      const res = await fetch("/api/upload-image-url", {
-        method: "POST",
-        body: JSON.stringify({ filename: file.name }),
-      });
-
-      if (!res.ok) throw new Error("Failed to get upload URL");
-
-      const { uploadUrl, publicUrl } = await res.json();
-
-      const uploadRes = await fetch(uploadUrl, {
-        method: "PUT",
-        body: file,
-      });
-
-      if (!uploadRes.ok) throw new Error("Image upload failed");
-
-      uploadedImages.push(publicUrl);
+    if (error) {
+      console.error("Upload error:", error);
+      throw error;
     }
 
-    const saveRes = await fetch("/api/projects/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title,
-        location,
-        scope,
-        category,
-        status,
-        images: uploadedImages,
-      }),
-    });
+    const { data } = supabase.storage
+      .from("project-images")
+      .getPublicUrl(fileName);
 
-    if (!saveRes.ok) throw new Error("Project save failed");
-
-    alert("✅ Project added successfully");
-
-    setUploading(false);
-    window.location.reload();
-
-  } catch (err) {
-    console.error(err);
-    alert("❌ Upload failed. Please try again.");
-    setUploading(false);
+    return data.publicUrl;
   }
-}
 
-
+  // -------------------------
   // ADD PROJECT
-  async function addProject(e) {
-    e.preventDefault();
-    setUploading(true);
+  // -------------------------
+  async function addProject() {
+    try {
+      setLoading(true);
 
-    let uploadedImages = [];
+      let imageUrls = [];
 
-    for (let file of images) {
-      const url = await uploadImage(file);
-      uploadedImages.push(url);
+      for (const file of files) {
+        const url = await uploadImage(file);
+        imageUrls.push(url);
+      }
+
+      await supabase.from("projects").insert([
+        {
+          title,
+          location,
+          scope,
+          category,
+          status,
+          images: imageUrls, // ✅ ALWAYS ARRAY
+        },
+      ]);
+
+      // reset form
+      setTitle("");
+      setLocation("");
+      setScope("");
+      setFiles([]);
+      setLoading(false);
+
+      fetchProjects();
+    } catch (err) {
+      console.error(err);
+      alert("Error adding project");
+      setLoading(false);
     }
-
-    await fetch("/api/projects/create", {
-      method: "POST",
-      body: JSON.stringify({
-        ...form,
-        images: uploadedImages,
-        featured_image: uploadedImages[0] || null,
-      }),
-    });
-
-    setForm({
-      title: "",
-      location: "",
-      scope: "",
-      category: "residence",
-      status: "ongoing",
-    });
-
-    setImages([]);
-    setUploading(false);
-    loadProjects();
   }
 
-  // DELETE
+  // -------------------------
+  // DELETE PROJECT
+  // -------------------------
   async function deleteProject(id) {
-    await fetch("/api/projects/delete", {
-      method: "POST",
-      body: JSON.stringify({ id }),
-    });
-    loadProjects();
-  }
-
-  // LOGIN SCREEN
-  if (!loggedIn) {
-    return (
-      <div style={{ padding: 40 }}>
-        <h1>Admin Login</h1>
-        <form onSubmit={login}>
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button type="submit">Login</button>
-        </form>
-      </div>
-    );
+    await supabase.from("projects").delete().eq("id", id);
+    fetchProjects();
   }
 
   return (
-    <div style={{ padding: 40 }}>
-      <button onClick={logout}>Logout</button>
-
+    <div style={{ padding: 30 }}>
       <h1>CRPA Admin Dashboard</h1>
 
-      {/* ADD PROJECT */}
-      <form onSubmit={addProject}>
-        <input
-          placeholder="Project Title"
-          value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Location"
-          value={form.location}
-          onChange={(e) => setForm({ ...form, location: e.target.value })}
-        />
-        <input
-          placeholder="Scope"
-          value={form.scope}
-          onChange={(e) => setForm({ ...form, scope: e.target.value })}
-        />
+      <h3>Add Project</h3>
 
-        <select
-          value={form.category}
-          onChange={(e) => setForm({ ...form, category: e.target.value })}
-        >
-          <option value="residence">Residence</option>
-          <option value="hotel">Hotel</option>
-          <option value="school">School</option>
-          <option value="temple">Temple</option>
-          <option value="commercial">Commercial</option>
-          <option value="farmhouse">Farmhouse</option>
-          <option value="office">Office</option>
-        </select>
+      <input placeholder="Title" value={title} onChange={e => setTitle(e.target.value)} />
+      <input placeholder="Location" value={location} onChange={e => setLocation(e.target.value)} />
+      <input placeholder="Scope" value={scope} onChange={e => setScope(e.target.value)} />
 
-        <select
-          value={form.status}
-          onChange={(e) => setForm({ ...form, status: e.target.value })}
-        >
-          <option value="ongoing">Ongoing</option>
-          <option value="upcoming">Upcoming</option>
-          <option value="completed">Completed</option>
-        </select>
+      <select value={category} onChange={e => setCategory(e.target.value)}>
+        <option>Residence</option>
+        <option>Commercial</option>
+        <option>Temple</option>
+      </select>
 
-        <input
-          type="file"
-          multiple
-          accept="image/*"
-          onChange={(e) => setImages(Array.from(e.target.files))}
-        />
+      <select value={status} onChange={e => setStatus(e.target.value)}>
+        <option value="ongoing">Ongoing</option>
+        <option value="upcoming">Upcoming</option>
+        <option value="completed">Completed</option>
+      </select>
 
-        <button type="submit">
-          {uploading ? "Uploading..." : "Add Project"}
-        </button>
-      </form>
+      <input type="file" multiple onChange={e => setFiles([...e.target.files])} />
 
-      {/* PROJECT LIST */}
+      <button onClick={addProject} disabled={loading}>
+        {loading ? "Uploading..." : "Add Project"}
+      </button>
+
+      <hr />
+
       <h2>All Projects</h2>
 
-      {projects.map((p) => (
+      {projects.map(p => (
         <div key={p.id} style={{ marginBottom: 20 }}>
-          <b>{p.title}</b>
-          <p>
-            {p.location} • {p.status}
-          </p>
-
-          {/* SAFE IMAGE PREVIEW */}
-          {Array.isArray(p.images) &&
-            p.images.filter(Boolean).map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt=""
-                style={{
-                  width: 80,
-                  marginRight: 8,
-                  borderRadius: 6,
-                }}
-                onError={(e) => {
-                  e.currentTarget.style.display = "none";
-                }}
-              />
-            ))}
-
+          <b>{p.title}</b> – {p.status}
           <br />
           <button onClick={() => deleteProject(p.id)}>Delete</button>
         </div>
@@ -251,3 +147,4 @@ export default function Admin() {
   );
 }
 
+export default dynamic(() => Promise.resolve(Admin), { ssr: false });
