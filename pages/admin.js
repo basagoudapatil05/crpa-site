@@ -91,21 +91,18 @@ export function Admin() {
       featured_image: uploadedURLs[0] || null,
     };
 
-    await fetch("/api/projects/create", {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
-
-    setForm({
-      title: "",
-      location: "",
-      scope: "",
-      category: "residence",
-      status: "ongoing",
-    });
-    setImages([]);
-    loadProjects();
-  }
+   await fetch("/api/projects/create", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    title: form.title,
+    location: form.location,
+    scope: form.scope,
+    category: form.category,
+    status: form.status,          // "ongoing" | "completed" | "upcoming"
+    images: imageUrls,            // ARRAY, not string
+  }),
+});
 
   // -------------------------
   // DELETE PROJECT
