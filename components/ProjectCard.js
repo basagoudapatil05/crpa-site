@@ -1,36 +1,63 @@
-export default function ProjectCard({ project }) {
-  return (
-    <div style={{
-      background: "#161a1f",
-      padding: 15,
-      borderRadius: 10,
-      marginBottom: 20
-    }}>
-      
-      {/* IMAGE PREVIEW */}
-      {Array.isArray(project.images) &&
-  project.images
-    .filter(Boolean)
-    .map((img, i) => (
-      <img
-        key={i}
-        src={img}
-        alt=""
-        style={{ width: "100%", borderRadius: 8 }}
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
-      />
-))}
-    alt="Preview"
-    style={{ width: "100%", borderRadius: 6 }}
-  />
-)}
+import React from "react";
 
-      <h3>{project.title}</h3>
-      <p>{project.location}</p>
-      <p>{project.status}</p>
-      <p>Category: {project.category}</p>
+export default function ProjectCard({ project }) {
+  if (!project) return null;
+
+  const images = Array.isArray(project.images)
+    ? project.images.filter(Boolean)
+    : [];
+
+  return (
+    <div
+      style={{
+        background: "#111",
+        padding: 20,
+        borderRadius: 12,
+        marginBottom: 20,
+        border: "1px solid #222",
+      }}
+    >
+      <h3 style={{ marginBottom: 6 }}>{project.title}</h3>
+
+      <p style={{ opacity: 0.8 }}>
+        {project.location} • {project.status}
+      </p>
+
+      {/* IMAGES (SAFE) */}
+      {images.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            marginTop: 12,
+            flexWrap: "wrap",
+          }}
+        >
+          {images.map((img, i) => (
+            <img
+              key={i}
+              src={img}
+              alt=""
+              style={{
+                width: 140,
+                height: 100,
+                objectFit: "cover",
+                borderRadius: 8,
+                border: "1px solid #333",
+              }}
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {images.length === 0 && (
+        <p style={{ opacity: 0.5, marginTop: 10 }}>
+          No images available
+        </p>
+      )}
     </div>
   );
 }
