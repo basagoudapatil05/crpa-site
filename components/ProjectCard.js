@@ -8,9 +8,20 @@ export default function ProjectCard({ project }) {
     }}>
       
       {/* IMAGE PREVIEW */}
-      {project.images && project.images.length > 0 && (
-  <img 
-    src={project.images[0]} 
+      {Array.isArray(project.images) &&
+  project.images
+    .filter(Boolean)
+    .map((img, i) => (
+      <img
+        key={i}
+        src={img}
+        alt=""
+        style={{ width: "100%", borderRadius: 8 }}
+        onError={(e) => {
+          e.currentTarget.style.display = "none";
+        }}
+      />
+))}
     alt="Preview"
     style={{ width: "100%", borderRadius: 6 }}
   />
