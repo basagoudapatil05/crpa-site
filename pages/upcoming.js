@@ -1,21 +1,24 @@
+"use client";
+
 import React from "react";
 import ProjectCard from "../components/ProjectCard";
-export default function OngoingProjects() {
+
+export default function UpcomingProjects() {
   const [projects, setProjects] = React.useState([]);
 
   React.useEffect(() => {
     fetch("/api/projects/list")
       .then((r) => r.json())
       .then((data) => {
-        setProjects(data.filter((p) => p.status === "ongoing"));
+        setProjects(data.filter((p) => p.status === "upcoming"));
       });
   }, []);
 
   return (
     <div style={{ padding: 30 }}>
-      <h1>Ongoing Projects</h1>
+      <h1>Upcoming Projects</h1>
 
-      {projects.length === 0 && <p>No projects found</p>}
+      {projects.length === 0 && <p>No upcoming projects found</p>}
 
       {projects.map((p) => (
         <ProjectCard key={p.id} project={p} />
