@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import ProjectCard from "../components/ProjectCard";
 
@@ -16,7 +18,7 @@ export default function OngoingProjects() {
     <div style={{ padding: 30 }}>
       <h1>Ongoing Projects</h1>
 
-      {projects.length === 0 && <p>No projects found</p>}
+      {projects.length === 0 && <p>No ongoing projects found</p>}
 
       {projects.map((p) => (
         <ProjectCard key={p.id} project={p} />
