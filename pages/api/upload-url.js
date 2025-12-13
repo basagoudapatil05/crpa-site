@@ -21,8 +21,8 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json({
-      uploadUrl: data.signedUrl,
-      path: filePath,
+  uploadUrl: data.signedUrl,
+  path
     });
 
   } catch (err) {
