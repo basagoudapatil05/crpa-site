@@ -13,23 +13,25 @@ export default async function handler(req, res) {
     const ext = filename.split(".").pop();
     const path = `${uuidv4()}.${ext}`;
 
-    // 1. Create signed upload URL
     const { data, error } = await supabase.storage
-      .from("project-images")
+      .from("project-images")   // <-- MUST MATCH YOUR BUCKET NAME EXACTLY
       .createSignedUploadUrl(path);
 
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.log("SIGNED URL ERROR:", error);
+      return res.status(500).json({ error: error.message });
+    }
+
+    // Return both upload URL & public path
+    const publicUrl =
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/project-images/${path}`;
 
     return res.status(200).json({
       uploadUrl: data.signedUrl,
-      path: path,
-      publicUrl: `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/project-images/${path}`
+      path: publicUrl, // <--- This MUST be a valid public URL
     });
-
   } catch (err) {
     console.error("Upload URL error:", err);
-    return res.status(500).json({ error: "Upload URL failed" });
+    res.status(500).json({ error: "Upload URL failed" });
   }
 }
-
-
