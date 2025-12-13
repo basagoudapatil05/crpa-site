@@ -65,7 +65,7 @@ export function Admin() {
       headers: { "Content-Type": file.type },
     });
 
-    const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
+    const publicURL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/project-images/${res.path}`;
 
     setUploading(false);
     
