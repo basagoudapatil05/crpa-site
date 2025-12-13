@@ -253,7 +253,10 @@ async function deleteProject(id) {
     </div>
   );
 })}
+} // <-- This closes the Admin component
 
+// Disable SSR for this page
+export default dynamic(() => Promise.resolve(Admin), {
+  ssr: false,
+});
 
-// ✅ IMPORTANT: disable SSR for admin
-export default dynamic(() => Promise.resolve(Admin), { ssr: false });
