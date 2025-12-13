@@ -203,52 +203,57 @@ async function deleteProject(id) {
         </button>
       </form>
 
-      <h2>All Projects</h2>
-      {projects.map((p) => (
-  <div key={p.id} className={styles.projectCard}>
-    <b>{p.title}</b>
-    <p>
-      {p.location} • {p.category} • {p.status}
-    </p>
+    <h2>All Projects</h2>
 
-    {/* IMAGE PREVIEW */}
+{projects.map((p) => {
   const images = Array.isArray(p.images)
-  ? p.images
-  : JSON.parse(p.images || "[]");
+    ? p.images
+    : JSON.parse(p.images || "[]");
 
-{images.length > 0 && (
-  <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-    {images.map((img, i) => (
-      <img
-        key={i}
-        src={img}
+  return (
+    <div key={p.id} className={styles.projectCard}>
+      <b>{p.title}</b>
+      <p>
+        {p.location} • {p.status}
+      </p>
+
+      {images.length > 0 && (
+        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+          {images.map((img, i) => (
+            <img
+              key={i}
+              src={img}
+              alt=""
+              style={{
+                width: 80,
+                height: 80,
+                objectFit: "cover",
+                borderRadius: 6,
+                border: "1px solid #333",
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      <button
+        onClick={() => deleteProject(p.id)}
         style={{
-          width: 80,
-          height: 80,
-          objectFit: "cover",
-          borderRadius: 6,
-          border: "1px solid #333",
+          marginTop: 10,
+          background: "red",
+          color: "#fff",
+          border: "none",
+          padding: "6px 12px",
+          borderRadius: 4,
+          cursor: "pointer",
         }}
-      />
-    ))}
-  </div>
-)}
-
-      </div>
-    )}
-
-    <button
-      onClick={() => deleteProject(p.id)}
-      style={{ marginTop: 10 }}
-    >
-      Delete
-    </button>
-  </div>
-))}
-
+      >
+        Delete
+      </button>
     </div>
   );
-}
+})}
+
 
 // ✅ IMPORTANT: disable SSR for admin
 export default dynamic(() => Promise.resolve(Admin), { ssr: false });
