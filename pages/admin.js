@@ -1,164 +1,189 @@
+// pages/admin.js
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import styles from "../styles/Admin.module.css";
 
-function Admin() {
-  // ---------------- AUTH ----------------
+export function Admin() {
   const [password, setPassword] = useState("");
-  const [authenticated, setAuthenticated] = useState(false);
+  const [auth, setAuth] = useState(false);
 
-  // ---------------- FORM ----------------
   const [form, setForm] = useState({
     title: "",
     location: "",
     scope: "",
-    status: "ongoing",
     category: "residence",
+    status: "ongoing",
   });
 
   const [images, setImages] = useState([]);
-  const [projects, setProjects] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [projects, setProjects] = useState([]);
 
-  // ---------------- LOGIN ----------------
+  // -------------------------
+  // LOGIN FUNCTION
+  // -------------------------
   function handleLogin(e) {
     e.preventDefault();
+
     if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      setAuthenticated(true);
+      setAuth(true);
     } else {
       alert("Incorrect password");
     }
   }
 
-  function logout() {
-    setAuthenticated(false);
-    setPassword("");
-  }
-
-  // ---------------- LOAD PROJECTS ----------------
+  // -------------------------
+  // LOAD PROJECT LIST
+  // -------------------------
   async function loadProjects() {
-    const res = await fetch("/api/projects/list");
-    const data = await res.json();
-    setProjects(data || []);
+    try {
+      const res = await fetch("/api/projects/list");
+      const data = await res.json();
+      setProjects(data);
+    } catch (err) {
+      console.error("Load projects error:", err);
+    }
   }
 
   useEffect(() => {
-    if (authenticated) loadProjects();
-  }, [authenticated]);
+    if (auth) loadProjects();
+  }, [auth]);
 
-  // ---------------- IMAGE UPLOAD ----------------
+  // -------------------------
+  // UPLOAD IMAGE → GET PUBLIC URL
+  // -------------------------
   async function uploadImage(file) {
     setUploading(true);
 
     const res = await fetch("/api/upload-url", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ filename: file.name }),
     }).then((r) => r.json());
 
     await fetch(res.uploadUrl, {
       method: "PUT",
-      headers: { "Content-Type": file.type },
       body: file,
+      headers: { "Content-Type": file.type },
     });
 
-    setUploading(false);
+    const publicURL = `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
 
-    return `https://${process.env.NEXT_PUBLIC_SUPABASE_ID}.supabase.co/storage/v1/object/public/project-images/${res.path}`;
+    setUploading(false);
+    
+    return publicURL;
   }
 
-  // ---------------- ADD PROJECT ----------------
+  // -------------------------
+  // ADD PROJECT
+  // -------------------------
   async function addProject(e) {
     e.preventDefault();
 
-    let uploadedImages = [];
+    let uploadedURLs = [];
 
-    for (let file of images) {
-      const url = await uploadImage(file);
-      uploadedImages.push(url);
+    for (let img of images) {
+      let url = await uploadImage(img);
+      uploadedURLs.push(url);
     }
+
+    const payload = {
+      ...form,
+      images: uploadedURLs,
+      featured_image: uploadedURLs[0] || null,
+    };
 
     await fetch("/api/projects/create", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        images: uploadedImages,
-        featured_image: uploadedImages[0] || null,
-      }),
+      body: JSON.stringify(payload),
     });
 
     setForm({
       title: "",
       location: "",
       scope: "",
-      status: "ongoing",
       category: "residence",
+      status: "ongoing",
     });
     setImages([]);
     loadProjects();
   }
 
+  // -------------------------
   // DELETE PROJECT
-async function deleteProject(id) {
-  await fetch("/api/projects/delete", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ id }),
-  });
+  // -------------------------
+  async function deleteProject(id) {
+    await fetch("/api/projects/delete", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
 
-  loadProjects();
-}
+    loadProjects();
+  }
 
-
-  // ---------------- LOGIN SCREEN ----------------
-  if (!authenticated) {
+  // -------------------------
+  // LOGIN SCREEN
+  // -------------------------
+  if (!auth) {
     return (
-      <div className={styles.loginWrapper}>
+      <div style={{ padding: 40 }}>
         <h1>Admin Login</h1>
         <form onSubmit={handleLogin}>
           <input
             type="password"
-            placeholder="Admin Password"
+            placeholder="Enter Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            style={{ padding: 10, width: 250 }}
           />
-          <button type="submit">Login</button>
+          <button type="submit" style={{ marginLeft: 10 }}>
+            Login
+          </button>
         </form>
       </div>
     );
   }
 
-  // ---------------- DASHBOARD ----------------
+  // -------------------------
+  // ADMIN DASHBOARD
+  // -------------------------
   return (
-    <div className={styles.container}>
+    <div style={{ padding: 30, color: "#fff", background: "#0f1114", minHeight: "100vh" }}>
+      
+      <button
+        onClick={() => setAuth(false)}
+        style={{
+          background: "#1e4fbf",
+          padding: "8px 14px",
+          borderRadius: 6,
+          border: "none",
+          color: "#fff",
+          marginBottom: 20,
+        }}
+      >
+        Logout
+      </button>
+
       <h1>CRPA Admin Dashboard</h1>
-      <button onClick={logout} className={styles.logoutBtn}>Logout</button>
 
       <h2>Add Project</h2>
-
-      <form onSubmit={addProject}>
+      <form onSubmit={addProject} style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
         <input
           placeholder="Project Title"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           required
         />
-
         <input
           placeholder="Location"
           value={form.location}
           onChange={(e) => setForm({ ...form, location: e.target.value })}
         />
-
         <input
           placeholder="Scope"
           value={form.scope}
           onChange={(e) => setForm({ ...form, scope: e.target.value })}
         />
 
+        {/* CATEGORY */}
         <select
           value={form.category}
           onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -172,91 +197,76 @@ async function deleteProject(id) {
           <option value="office">Office</option>
         </select>
 
+        {/* STATUS */}
         <select
           value={form.status}
           onChange={(e) => setForm({ ...form, status: e.target.value })}
         >
           <option value="ongoing">Ongoing</option>
-          <option value="completed">Completed</option>
           <option value="upcoming">Upcoming</option>
+          <option value="completed">Completed</option>
         </select>
 
+        {/* IMAGE UPLOAD WITH PREVIEW */}
         <input
           type="file"
           multiple
-          accept="image/*"
-          onChange={(e) => setImages(Array.from(e.target.files))}
+          onChange={(e) => setImages([...e.target.files])}
         />
 
-        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
-          {images.map((img, i) => (
-            <img
-              key={i}
-              src={URL.createObjectURL(img)}
-              style={{ width: 80, height: 80, objectFit: "cover" }}
-            />
-          ))}
-        </div>
+        {/* PREVIEW */}
+        {images.length > 0 && (
+          <div style={{ display: "flex", gap: 10 }}>
+            {images.map((img, i) => (
+              <img
+                key={i}
+                src={URL.createObjectURL(img)}
+                style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6 }}
+              />
+            ))}
+          </div>
+        )}
 
         <button type="submit">
           {uploading ? "Uploading..." : "Add Project"}
         </button>
       </form>
 
-    <h2>All Projects</h2>
+      <h2 style={{ marginTop: 40 }}>All Projects</h2>
 
-{projects.map((p) => {
-  const images = Array.isArray(p.images)
-    ? p.images
-    : JSON.parse(p.images || "[]");
+      {projects.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            padding: 15,
+            background: "#161a1f",
+            marginBottom: 12,
+            borderRadius: 8,
+          }}
+        >
+          <b>{p.title}</b>
+          <p>{p.location} • {p.status}</p>
 
-  return (
-    <div key={p.id} className={styles.projectCard}>
-      <b>{p.title}</b>
-      <p>
-        {p.location} • {p.status}
-      </p>
-
-      {images.length > 0 && (
-        <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
-          {images.map((img, i) => (
-            <img
-              key={i}
-              src={img}
-              alt=""
-              style={{
-                width: 80,
-                height: 80,
-                objectFit: "cover",
-                borderRadius: 6,
-                border: "1px solid #333",
-              }}
-            />
-          ))}
+          <button
+            onClick={() => deleteProject(p.id)}
+            style={{
+              marginTop: 8,
+              background: "red",
+              color: "#fff",
+              border: "none",
+              padding: "6px 10px",
+              borderRadius: 6,
+            }}
+          >
+            Delete
+          </button>
         </div>
-      )}
-
-      <button
-        onClick={() => deleteProject(p.id)}
-        style={{
-          marginTop: 10,
-          background: "red",
-          color: "#fff",
-          border: "none",
-          padding: "6px 12px",
-          borderRadius: 4,
-          cursor: "pointer",
-        }}
-      >
-        Delete
-      </button>
+      ))}
     </div>
   );
-})}
-} // <-- This closes the Admin component
+}
 
-// Disable SSR for this page
-export default dynamic(() => Promise.resolve(Admin), {
-  ssr: false,
-});
-
+// -------------------------
+// DISABLE SSR (IMPORTANT FOR ADMIN PAGE)
+// -------------------------
+export default dynamic(() => Promise.resolve(Admin), { ssr: false });
