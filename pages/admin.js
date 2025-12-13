@@ -40,22 +40,60 @@ export default function Admin() {
   }
 
   // UPLOAD SINGLE IMAGE
-  async function uploadImage(file) {
-    const res = await fetch("/api/upload-image-url", {
+  async function handleAddProject(e) {
+  e.preventDefault();
+  setUploading(true);
+
+  try {
+    const uploadedImages = [];
+
+    for (const file of images) {
+      const res = await fetch("/api/upload-image-url", {
+        method: "POST",
+        body: JSON.stringify({ filename: file.name }),
+      });
+
+      if (!res.ok) throw new Error("Failed to get upload URL");
+
+      const { uploadUrl, publicUrl } = await res.json();
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: "PUT",
+        body: file,
+      });
+
+      if (!uploadRes.ok) throw new Error("Image upload failed");
+
+      uploadedImages.push(publicUrl);
+    }
+
+    const saveRes = await fetch("/api/projects/create", {
       method: "POST",
-      body: JSON.stringify({ filename: file.name }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title,
+        location,
+        scope,
+        category,
+        status,
+        images: uploadedImages,
+      }),
     });
 
-    const data = await res.json();
+    if (!saveRes.ok) throw new Error("Project save failed");
 
-    await fetch(data.uploadUrl, {
-      method: "PUT",
-      body: file,
-      headers: { "Content-Type": file.type },
-    });
+    alert("✅ Project added successfully");
 
-    return data.publicUrl;
+    setUploading(false);
+    window.location.reload();
+
+  } catch (err) {
+    console.error(err);
+    alert("❌ Upload failed. Please try again.");
+    setUploading(false);
   }
+}
+
 
   // ADD PROJECT
   async function addProject(e) {
