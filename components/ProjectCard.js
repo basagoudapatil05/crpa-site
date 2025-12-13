@@ -1,79 +1,32 @@
-// components/ProjectCard.js
-import { useState } from "react";
-
-export default function ProjectCard({ p }) {
-  const [lightbox, setLightbox] = useState(null);
-
+export default function ProjectCard({ project }) {
   return (
-    <div
-      style={{
-        padding: 16,
-        borderRadius: 8,
-        background: "#161a1f",
-        border: "1px solid #2d3239",
-        marginBottom: 20,
-        color: "#fff",
-      }}
-    >
-      {/* IMAGE (if exists) */}
-      const images = Array.isArray(p.images)
-  ? p.images
-  : JSON.parse(p.images || "[]");
-
-{images.map((img, i) => (
-  <img
-    key={i}
-    src={img}
-    style={{
-      width: "100%",
-      height: "200px",
-      objectFit: "cover",
-      borderRadius: 8,
-    }}
-  />
-))}
-
-      {/* TITLE */}
-      <h3 style={{ margin: 0, fontSize: 20 }}>{p.title}</h3>
-
-      {/* LOCATION + STATUS */}
-      <p style={{ opacity: 0.7, margin: "6px 0" }}>
-        {p.location} • {p.status}
-      </p>
-
-      {/* SCOPE */}
-      {p.scope && (
-        <p style={{ margin: "6px 0", opacity: 0.8 }}>
-          Scope: {p.scope}
-        </p>
-      )}
-
-      {/* LIGHTBOX */}
-      {lightbox && (
-        <div
-          onClick={() => setLightbox(null)}
+    <div style={{
+      background: "#161a1f",
+      padding: 15,
+      borderRadius: 10,
+      marginBottom: 20
+    }}>
+      
+      {/* IMAGE PREVIEW */}
+      {project.images && project.images.length > 0 && (
+        <img
+          src={project.images[0]}
           style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.85)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 9999,
-            cursor: "zoom-out",
+            width: "100%",
+            height: 250,
+            objectFit: "cover",
+            borderRadius: 10,
+            marginBottom: 10
           }}
-        >
-          <img
-            src={lightbox}
-            style={{
-              maxWidth: "90%",
-              maxHeight: "90%",
-              borderRadius: 8,
-            }}
-          />
-        </div>
+        />
       )}
+
+      <h3>{project.title}</h3>
+      <p>{project.location}</p>
+      <p>{project.status}</p>
+      <p>Category: {project.category}</p>
     </div>
   );
 }
+
 
