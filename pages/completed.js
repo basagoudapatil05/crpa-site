@@ -1,5 +1,5 @@
+import React from "react";
 import ProjectCard from "../components/ProjectCard";
-
 export default function OngoingProjects() {
   const [projects, setProjects] = React.useState([]);
 
