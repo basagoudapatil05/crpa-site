@@ -9,17 +9,12 @@ export default function ProjectCard({ project }) {
       
       {/* IMAGE PREVIEW */}
       {project.images && project.images.length > 0 && (
-        <img
-          src={project.images[0]}
-          style={{
-            width: "100%",
-            height: 250,
-            objectFit: "cover",
-            borderRadius: 10,
-            marginBottom: 10
-          }}
-        />
-      )}
+  <img 
+    src={project.images[0]} 
+    alt="Preview"
+    style={{ width: "100%", borderRadius: 6 }}
+  />
+)}
 
       <h3>{project.title}</h3>
       <p>{project.location}</p>
