@@ -1,261 +1,211 @@
-import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
-import { createClient } from "@supabase/supabase-js";
+import React, { useEffect, useState } from "react";
 
-/* -------------------------
-   SUPABASE CLIENT
--------------------------- */
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
-
-/* -------------------------
-   ADMIN COMPONENT
--------------------------- */
-function Admin() {
-  const [loggedIn, setLoggedIn] = useState(false);
+export default function Admin() {
   const [password, setPassword] = useState("");
+  const [loggedIn, setLoggedIn] = useState(false);
+
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [images, setImages] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
     location: "",
     scope: "",
-    category: "Residence",
-    status: "Ongoing",
-    images: [],
+    category: "residence",
+    status: "ongoing",
   });
 
-  /* -------------------------
-     LOGIN
-  -------------------------- */
-  const handleLogin = () => {
+  // LOGIN
+  function login(e) {
+    e.preventDefault();
     if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      localStorage.setItem("admin", "true");
       setLoggedIn(true);
+      loadProjects();
     } else {
       alert("Incorrect password");
     }
-  };
+  }
 
-  const logout = () => {
-    localStorage.removeItem("admin");
+  function logout() {
     setLoggedIn(false);
-  };
-
-  useEffect(() => {
-    if (localStorage.getItem("admin") === "true") {
-      setLoggedIn(true);
-    }
-    fetchProjects();
-  }, []);
-
-  /* -------------------------
-     FETCH PROJECTS
-  -------------------------- */
-  async function fetchProjects() {
-    const { data, error } = await supabase
-      .from("projects")
-      .select("*")
-      .order("id", { ascending: false });
-
-    if (!error) setProjects(data || []);
+    setPassword("");
   }
 
-  /* -------------------------
-     IMAGE UPLOAD
-  -------------------------- */
-  async function uploadImages(files) {
-    const urls = [];
-
-    for (const file of files) {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
-
-      const { error } = await supabase.storage
-        .from("project-images")
-        .upload(fileName, file, {
-          upsert: false,
-        });
-
-      if (error) {
-        console.error(error);
-        alert("Image upload failed");
-        return [];
-      }
-
-      const { data } = supabase.storage
-        .from("project-images")
-        .getPublicUrl(fileName);
-
-      urls.push(data.publicUrl);
-    }
-
-    return urls;
+  // LOAD PROJECTS
+  async function loadProjects() {
+    const res = await fetch("/api/projects/list");
+    const data = await res.json();
+    setProjects(Array.isArray(data) ? data : []);
   }
 
-  /* -------------------------
-     CREATE PROJECT
-  -------------------------- */
-  async function addProject() {
-    if (!form.title) {
-      alert("Title required");
-      return;
+  // UPLOAD SINGLE IMAGE
+  async function uploadImage(file) {
+    const res = await fetch("/api/upload-image-url", {
+      method: "POST",
+      body: JSON.stringify({ filename: file.name }),
+    });
+
+    const data = await res.json();
+
+    await fetch(data.uploadUrl, {
+      method: "PUT",
+      body: file,
+      headers: { "Content-Type": file.type },
+    });
+
+    return data.publicUrl;
+  }
+
+  // ADD PROJECT
+  async function addProject(e) {
+    e.preventDefault();
+    setUploading(true);
+
+    let uploadedImages = [];
+
+    for (let file of images) {
+      const url = await uploadImage(file);
+      uploadedImages.push(url);
     }
 
-    setLoading(true);
-
-    let imageUrls = [];
-    if (form.images.length > 0) {
-      imageUrls = await uploadImages(form.images);
-    }
-
-    const { error } = await supabase.from("projects").insert([
-      {
-        title: form.title,
-        location: form.location,
-        description: form.scope,
-        category: form.category,
-        status: form.status.toLowerCase(),
-        images: imageUrls,
-        featured_image: imageUrls[0] || null,
-      },
-    ]);
-
-    setLoading(false);
-
-    if (error) {
-      console.error(error);
-      alert("Failed to add project");
-      return;
-    }
+    await fetch("/api/projects/create", {
+      method: "POST",
+      body: JSON.stringify({
+        ...form,
+        images: uploadedImages,
+        featured_image: uploadedImages[0] || null,
+      }),
+    });
 
     setForm({
       title: "",
       location: "",
       scope: "",
-      category: "Residence",
-      status: "Ongoing",
-      images: [],
+      category: "residence",
+      status: "ongoing",
     });
 
-    fetchProjects();
+    setImages([]);
+    setUploading(false);
+    loadProjects();
   }
 
-  /* -------------------------
-     DELETE PROJECT
-  -------------------------- */
+  // DELETE
   async function deleteProject(id) {
-    if (!confirm("Delete this project?")) return;
-
-    await supabase.from("projects").delete().eq("id", id);
-    fetchProjects();
+    await fetch("/api/projects/delete", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    });
+    loadProjects();
   }
 
-  /* -------------------------
-     LOGIN SCREEN
-  -------------------------- */
+  // LOGIN SCREEN
   if (!loggedIn) {
     return (
-      <div style={{ padding: 50 }}>
-        <h2>Admin Login</h2>
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        <br />
-        <button onClick={handleLogin}>Login</button>
+      <div style={{ padding: 40 }}>
+        <h1>Admin Login</h1>
+        <form onSubmit={login}>
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button type="submit">Login</button>
+        </form>
       </div>
     );
   }
 
-  /* -------------------------
-     DASHBOARD
-  -------------------------- */
   return (
-    <div style={{ padding: 30 }}>
-      <h1>CRPA Admin Dashboard</h1>
+    <div style={{ padding: 40 }}>
       <button onClick={logout}>Logout</button>
 
-      <h2>Add Project</h2>
+      <h1>CRPA Admin Dashboard</h1>
 
-      <input
-        placeholder="Project Title"
-        value={form.title}
-        onChange={(e) => setForm({ ...form, title: e.target.value })}
-      />
+      {/* ADD PROJECT */}
+      <form onSubmit={addProject}>
+        <input
+          placeholder="Project Title"
+          value={form.title}
+          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          required
+        />
+        <input
+          placeholder="Location"
+          value={form.location}
+          onChange={(e) => setForm({ ...form, location: e.target.value })}
+        />
+        <input
+          placeholder="Scope"
+          value={form.scope}
+          onChange={(e) => setForm({ ...form, scope: e.target.value })}
+        />
 
-      <input
-        placeholder="Location"
-        value={form.location}
-        onChange={(e) => setForm({ ...form, location: e.target.value })}
-      />
+        <select
+          value={form.category}
+          onChange={(e) => setForm({ ...form, category: e.target.value })}
+        >
+          <option value="residence">Residence</option>
+          <option value="hotel">Hotel</option>
+          <option value="school">School</option>
+          <option value="temple">Temple</option>
+          <option value="commercial">Commercial</option>
+          <option value="farmhouse">Farmhouse</option>
+          <option value="office">Office</option>
+        </select>
 
-      <input
-        placeholder="Scope"
-        value={form.scope}
-        onChange={(e) => setForm({ ...form, scope: e.target.value })}
-      />
+        <select
+          value={form.status}
+          onChange={(e) => setForm({ ...form, status: e.target.value })}
+        >
+          <option value="ongoing">Ongoing</option>
+          <option value="upcoming">Upcoming</option>
+          <option value="completed">Completed</option>
+        </select>
 
-      <select
-        value={form.category}
-        onChange={(e) => setForm({ ...form, category: e.target.value })}
-      >
-        <option>Residence</option>
-        <option>Hotel</option>
-        <option>School</option>
-        <option>Temple</option>
-        <option>Commercial</option>
-        <option>Farmhouse</option>
-        <option>Office</option>
-      </select>
+        <input
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={(e) => setImages(Array.from(e.target.files))}
+        />
 
-      <select
-        value={form.status}
-        onChange={(e) => setForm({ ...form, status: e.target.value })}
-      >
-        <option>Ongoing</option>
-        <option>Upcoming</option>
-        <option>Completed</option>
-      </select>
+        <button type="submit">
+          {uploading ? "Uploading..." : "Add Project"}
+        </button>
+      </form>
 
-      <input
-        type="file"
-        multiple
-        onChange={(e) =>
-          setForm({ ...form, images: Array.from(e.target.files) })
-        }
-      />
-
-      <button onClick={addProject} disabled={loading}>
-        {loading ? "Adding..." : "Add Project"}
-      </button>
-
+      {/* PROJECT LIST */}
       <h2>All Projects</h2>
 
       {projects.map((p) => (
-        <div key={p.id} style={{ marginBottom: 30 }}>
-          <h3>{p.title}</h3>
+        <div key={p.id} style={{ marginBottom: 20 }}>
+          <b>{p.title}</b>
           <p>
             {p.location} • {p.status}
           </p>
 
-          <div style={{ display: "flex", gap: 10 }}>
-            {Array.isArray(p.images) &&
-              p.images.map((img, i) => (
-                <img
-                  key={i}
-                  src={img}
-                  width="120"
-                  style={{ borderRadius: 6 }}
-                />
-              ))}
-          </div>
+          {/* SAFE IMAGE PREVIEW */}
+          {Array.isArray(p.images) &&
+            p.images.filter(Boolean).map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                alt=""
+                style={{
+                  width: 80,
+                  marginRight: 8,
+                  borderRadius: 6,
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = "none";
+                }}
+              />
+            ))}
 
+          <br />
           <button onClick={() => deleteProject(p.id)}>Delete</button>
         </div>
       ))}
@@ -263,9 +213,3 @@ function Admin() {
   );
 }
 
-/* -------------------------
-   DISABLE SSR (CRITICAL)
--------------------------- */
-export default dynamic(() => Promise.resolve(Admin), {
-  ssr: false,
-});
