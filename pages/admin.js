@@ -1,3 +1,4 @@
+import { uploadImage } from "../lib/uploadImage";
 import { useEffect, useState } from "react";
 import { createClient } from "lib/supabase.js";
 const supabase = createClient(
