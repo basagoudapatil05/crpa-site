@@ -1,68 +1,60 @@
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_KEY
 );
 
-function Admin() {
-  /* ---------------- AUTH ---------------- */
+export default function Admin() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const ok = localStorage.getItem("admin_logged_in");
-    if (ok === "true") setLoggedIn(true);
-  }, []);
+  const [form, setForm] = useState({
+    title: "",
+    location: "",
+    scope: "",
+    category: "Residence",
+    status: "ongoing",
+    files: []
+  });
 
+  // ---------------- LOGIN ----------------
   function login() {
     if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      localStorage.setItem("admin_logged_in", "true");
       setLoggedIn(true);
+      localStorage.setItem("admin", "true");
     } else {
       alert("Wrong password");
     }
   }
 
   function logout() {
-    localStorage.removeItem("admin_logged_in");
+    localStorage.removeItem("admin");
     setLoggedIn(false);
   }
 
-  /* ---------------- FORM ---------------- */
-  const [form, setForm] = useState({
-    title: "",
-    location: "",
-    scope: "",
-    category: "Residence",
-    status: "Ongoing",
-  });
+  useEffect(() => {
+    if (localStorage.getItem("admin") === "true") {
+      setLoggedIn(true);
+    }
+    loadProjects();
+  }, []);
 
-  const [files, setFiles] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [projects, setProjects] = useState([]);
-
-  /* ---------------- LOAD PROJECTS ---------------- */
+  // ---------------- LOAD PROJECTS ----------------
   async function loadProjects() {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("projects")
       .select("*")
       .order("id", { ascending: false });
 
-    if (!error) setProjects(data || []);
+    setProjects(data || []);
   }
 
-  useEffect(() => {
-    if (loggedIn) loadProjects();
-  }, [loggedIn]);
-
-  /* ---------------- IMAGE UPLOAD ---------------- */
- async function uploadImages() {
-  const uploaded = [];
-
-  for (const file of files) {
+  // ---------------- IMAGE UPLOAD ----------------
+  async function uploadImage(file) {
     const fileName = `${Date.now()}-${file.name}`;
 
     const { error } = await supabase.storage
@@ -70,77 +62,54 @@ function Admin() {
       .upload(fileName, file);
 
     if (error) {
-      console.error("Upload failed:", error);
-      continue;
+      console.error(error);
+      return null;
     }
 
-    const { data } = supabase.storage
-      .from("project-images")
-      .getPublicUrl(fileName);
-
-    if (data?.publicUrl) {
-      uploaded.push(data.publicUrl); // ✅ clean URL
-    }
+    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/project-images/${fileName}`;
   }
 
-  return uploaded;
-}
-
-  /* ---------------- ADD PROJECT ---------------- */
+  // ---------------- ADD PROJECT ----------------
   async function addProject() {
-    if (!form.title) {
-      alert("Title required");
-      return;
+    setLoading(true);
+
+    let imageUrls = [];
+
+    for (let file of form.files) {
+      const url = await uploadImage(file);
+      if (url) imageUrls.push(url);
     }
 
-    setUploading(true);
-
-    const imageUrls = files.length ? await uploadImages() : [];
-
-    const { error } = await supabase.from("projects").insert([
-      {
-        title: form.title,
-        location: form.location,
-        scope: form.scope,
-        category: form.category,
-        status: form.status.toLowerCase(),
-        images: imageUrls,
-      },
-    ]);
-
-    setUploading(false);
-
-    if (error) {
-      alert("Insert failed – check console");
-      console.error(error);
-      return;
-    }
+    await supabase.from("projects").insert({
+      title: form.title,
+      location: form.location,
+      scope: form.scope,
+      category: form.category,
+      status: form.status,
+      images: imageUrls
+    });
 
     setForm({
       title: "",
       location: "",
       scope: "",
       category: "Residence",
-      status: "Ongoing",
+      status: "ongoing",
+      files: []
     });
-    setFiles([]);
+
+    setLoading(false);
     loadProjects();
   }
 
-  /* ---------------- DELETE ---------------- */
-  async function deleteProject(id) {
-    await supabase.from("projects").delete().eq("id", id);
-    loadProjects();
-  }
-
-  /* ---------------- LOGIN SCREEN ---------------- */
+  // ---------------- UI ----------------
   if (!loggedIn) {
     return (
       <div style={{ padding: 40 }}>
         <h2>Admin Login</h2>
         <input
           type="password"
-          placeholder="Admin password"
+          placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
@@ -149,77 +118,46 @@ function Admin() {
     );
   }
 
-  /* ---------------- DASHBOARD ---------------- */
   return (
     <div style={{ padding: 30 }}>
       <button onClick={logout}>Logout</button>
-
       <h1>CRPA Admin Dashboard</h1>
 
-      <h2>Add Project</h2>
+      <h3>Add Project</h3>
 
-      <input
-        placeholder="Title"
-        value={form.title}
-        onChange={(e) => setForm({ ...form, title: e.target.value })}
-      />
+      <input placeholder="Title" value={form.title}
+        onChange={(e) => setForm({ ...form, title: e.target.value })} />
 
-      <input
-        placeholder="Location"
-        value={form.location}
-        onChange={(e) => setForm({ ...form, location: e.target.value })}
-      />
+      <input placeholder="Location" value={form.location}
+        onChange={(e) => setForm({ ...form, location: e.target.value })} />
 
-      <input
-        placeholder="Scope"
-        value={form.scope}
-        onChange={(e) => setForm({ ...form, scope: e.target.value })}
-      />
+      <input placeholder="Scope" value={form.scope}
+        onChange={(e) => setForm({ ...form, scope: e.target.value })} />
 
-      <select
-        value={form.category}
-        onChange={(e) => setForm({ ...form, category: e.target.value })}
-      >
+      <select onChange={(e) => setForm({ ...form, category: e.target.value })}>
         <option>Residence</option>
-        <option>Hotel</option>
-        <option>School</option>
-        <option>Temple</option>
         <option>Commercial</option>
-        <option>Farmhouse</option>
-        <option>Office</option>
+        <option>Temple</option>
       </select>
 
-      <select
-        value={form.status}
-        onChange={(e) => setForm({ ...form, status: e.target.value })}
-      >
-        <option>Ongoing</option>
-        <option>Upcoming</option>
-        <option>Completed</option>
+      <select onChange={(e) => setForm({ ...form, status: e.target.value })}>
+        <option value="ongoing">Ongoing</option>
+        <option value="upcoming">Upcoming</option>
+        <option value="completed">Completed</option>
       </select>
 
-      <input
-        type="file"
-        multiple
-        onChange={(e) => setFiles([...e.target.files])}
-      />
+      <input type="file" multiple
+        onChange={(e) => setForm({ ...form, files: e.target.files })} />
 
-      <button onClick={addProject} disabled={uploading}>
-        {uploading ? "Uploading..." : "Add Project"}
+      <button onClick={addProject}>
+        {loading ? "Uploading..." : "Add Project"}
       </button>
 
-      <h2>All Projects</h2>
-
+      <h3>All Projects</h3>
       {projects.map((p) => (
-        <div key={p.id} style={{ border: "1px solid #444", padding: 10 }}>
-          <b>{p.title}</b> – {p.location} • {p.status}
-          <br />
-          <button onClick={() => deleteProject(p.id)}>Delete</button>
-        </div>
+        <div key={p.id}>{p.title}</div>
       ))}
     </div>
   );
 }
 
-/* 🔒 IMPORTANT: disable SSR */
-export default dynamic(() => Promise.resolve(Admin), { ssr: false });
