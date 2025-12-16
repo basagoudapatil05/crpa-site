@@ -4,17 +4,21 @@ export default function ProjectCard({ project }) {
   return (
     <div className="project-card">
       <h3>{project.title}</h3>
-      <p>{project.location}</p>
+      <p>
+        {project.location} • {project.status}
+      </p>
 
       <div style={{ display: "flex", gap: 10 }}>
-        {images.length === 0 && <p>No images</p>}
+        {images.length === 0 && (
+          <div className="img-placeholder">No Image</div>
+        )}
 
-        {images.map((img, i) => (
+        {images.map((url, i) => (
           <img
             key={i}
-            src={img}
+            src={url}
             alt=""
-            style={{ width: 150, height: 100, objectFit: "cover" }}
+            style={{ width: 120, height: 120, objectFit: "cover" }}
             onError={(e) => (e.target.style.display = "none")}
           />
         ))}
@@ -22,3 +26,4 @@ export default function ProjectCard({ project }) {
     </div>
   );
 }
+
