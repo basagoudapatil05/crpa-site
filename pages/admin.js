@@ -59,30 +59,32 @@ function Admin() {
   }, [loggedIn]);
 
   /* ---------------- IMAGE UPLOAD ---------------- */
-  async function uploadImages() {
-    const uploaded = [];
+ async function uploadImages() {
+  const uploaded = [];
 
-    for (const file of files) {
-      const filename = `${Date.now()}-${file.name}`;
+  for (const file of files) {
+    const fileName = `${Date.now()}-${file.name}`;
 
-      const { error } = await supabase.storage
-        .from("project-images")
-        .upload(filename, file, { upsert: false });
+    const { error } = await supabase.storage
+      .from("project-images")
+      .upload(fileName, file);
 
-      if (error) {
-        console.error(error);
-        continue;
-      }
-
-      const { data } = supabase.storage
-        .from("project-images")
-        .getPublicUrl(filename);
-
-      uploaded.push(data.publicUrl);
+    if (error) {
+      console.error("Upload failed:", error);
+      continue;
     }
 
-    return uploaded;
+    const { data } = supabase.storage
+      .from("project-images")
+      .getPublicUrl(fileName);
+
+    if (data?.publicUrl) {
+      uploaded.push(data.publicUrl); // ✅ clean URL
+    }
   }
+
+  return uploaded;
+}
 
   /* ---------------- ADD PROJECT ---------------- */
   async function addProject() {
