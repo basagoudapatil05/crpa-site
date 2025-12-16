@@ -1,108 +1,107 @@
-import { uploadImage } from "../lib/uploadImage";
 import { useEffect, useState } from "react";
-import { createClient } from "lib/supabase.js";
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
+import dynamic from "next/dynamic";
+import { supabase } from "../lib/supabase";
+import { uploadImage } from "../lib/uploadImage";
 
-export default function Admin() {
+function Admin() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [password, setPassword] = useState("");
+
+  const [title, setTitle] = useState("");
+  const [location, setLocation] = useState("");
+  const [scope, setScope] = useState("");
+  const [category, setCategory] = useState("Residence");
+  const [status, setStatus] = useState("Ongoing");
+  const [files, setFiles] = useState([]);
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
-    title: "",
-    location: "",
-    scope: "",
-    category: "Residence",
-    status: "ongoing",
-    files: []
-  });
-
-  // ---------------- LOGIN ----------------
-  function login() {
-    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+  /* ---------------- LOGIN ---------------- */
+  useEffect(() => {
+    if (localStorage.getItem("crpa_admin") === "true") {
       setLoggedIn(true);
-      localStorage.setItem("admin", "true");
+      fetchProjects();
+    }
+  }, []);
+
+  const login = () => {
+    if (password === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+      localStorage.setItem("crpa_admin", "true");
+      setLoggedIn(true);
+      fetchProjects();
     } else {
       alert("Wrong password");
     }
-  }
+  };
 
-  function logout() {
-    localStorage.removeItem("admin");
+  const logout = () => {
+    localStorage.removeItem("crpa_admin");
     setLoggedIn(false);
-  }
+  };
 
-  useEffect(() => {
-    if (localStorage.getItem("admin") === "true") {
-      setLoggedIn(true);
-    }
-    loadProjects();
-  }, []);
-
-  // ---------------- LOAD PROJECTS ----------------
-  async function loadProjects() {
+  /* ---------------- FETCH PROJECTS ---------------- */
+  const fetchProjects = async () => {
     const { data } = await supabase
       .from("projects")
       .select("*")
-      .order("id", { ascending: false });
+      .order("created_at", { ascending: false });
 
     setProjects(data || []);
-  }
+  };
 
-  // ---------------- IMAGE UPLOAD ----------------
-  async function uploadImage(file) {
-    const fileName = `${Date.now()}-${file.name}`;
-
-    const { error } = await supabase.storage
-      .from("project-images")
-      .upload(fileName, file);
-
-    if (error) {
-      console.error(error);
-      return null;
+  /* ---------------- ADD PROJECT ---------------- */
+  const addProject = async () => {
+    if (!title || !location || !scope) {
+      alert("Fill all fields");
+      return;
     }
 
-    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/project-images/${fileName}`;
-  }
-
-  // ---------------- ADD PROJECT ----------------
-  async function addProject() {
     setLoading(true);
 
-    let imageUrls = [];
+    try {
+      let imageUrls = [];
 
-    for (let file of form.files) {
-      const url = await uploadImage(file);
-      if (url) imageUrls.push(url);
+      for (const file of files) {
+        const url = await uploadImage(file);
+        if (url) imageUrls.push(url);
+      }
+
+      const { error } = await supabase.from("projects").insert([
+        {
+          title,
+          location,
+          scope,
+          category,
+          status,
+          images: imageUrls,
+        },
+      ]);
+
+      if (error) throw error;
+
+      // reset form
+      setTitle("");
+      setLocation("");
+      setScope("");
+      setFiles([]);
+      fetchProjects();
+    } catch (err) {
+      console.error(err);
+      alert("Upload failed. Check console.");
     }
 
-    await supabase.from("projects").insert({
-      title: form.title,
-      location: form.location,
-      scope: form.scope,
-      category: form.category,
-      status: form.status,
-      images: imageUrls
-    });
-
-    setForm({
-      title: "",
-      location: "",
-      scope: "",
-      category: "Residence",
-      status: "ongoing",
-      files: []
-    });
-
     setLoading(false);
-    loadProjects();
-  }
+  };
 
-  // ---------------- UI ----------------
+  /* ---------------- DELETE PROJECT ---------------- */
+  const deleteProject = async (id) => {
+    if (!confirm("Delete this project?")) return;
+    await supabase.from("projects").delete().eq("id", id);
+    fetchProjects();
+  };
+
+  /* ---------------- UI ---------------- */
   if (!loggedIn) {
     return (
       <div style={{ padding: 40 }}>
@@ -120,44 +119,63 @@ export default function Admin() {
 
   return (
     <div style={{ padding: 30 }}>
-      <button onClick={logout}>Logout</button>
       <h1>CRPA Admin Dashboard</h1>
+      <button onClick={logout}>Logout</button>
 
-      <h3>Add Project</h3>
+      <h2>Add Project</h2>
 
-      <input placeholder="Title" value={form.title}
-        onChange={(e) => setForm({ ...form, title: e.target.value })} />
+      <input
+        placeholder="Project Title"
+        value={title}
+        onChange={(e) => setTitle(e.target.value)}
+      />
+      <input
+        placeholder="Location"
+        value={location}
+        onChange={(e) => setLocation(e.target.value)}
+      />
+      <input
+        placeholder="Scope"
+        value={scope}
+        onChange={(e) => setScope(e.target.value)}
+      />
 
-      <input placeholder="Location" value={form.location}
-        onChange={(e) => setForm({ ...form, location: e.target.value })} />
-
-      <input placeholder="Scope" value={form.scope}
-        onChange={(e) => setForm({ ...form, scope: e.target.value })} />
-
-      <select onChange={(e) => setForm({ ...form, category: e.target.value })}>
+      <select value={category} onChange={(e) => setCategory(e.target.value)}>
         <option>Residence</option>
         <option>Commercial</option>
         <option>Temple</option>
       </select>
 
-      <select onChange={(e) => setForm({ ...form, status: e.target.value })}>
-        <option value="ongoing">Ongoing</option>
-        <option value="upcoming">Upcoming</option>
-        <option value="completed">Completed</option>
+      <select value={status} onChange={(e) => setStatus(e.target.value)}>
+        <option>Ongoing</option>
+        <option>Upcoming</option>
+        <option>Completed</option>
       </select>
 
-      <input type="file" multiple
-        onChange={(e) => setForm({ ...form, files: e.target.files })} />
+      <input
+        type="file"
+        multiple
+        onChange={(e) => setFiles([...e.target.files])}
+      />
 
-      <button onClick={addProject}>
+      <button onClick={addProject} disabled={loading}>
         {loading ? "Uploading..." : "Add Project"}
       </button>
 
-      <h3>All Projects</h3>
+      <h2>All Projects</h2>
+
       {projects.map((p) => (
-        <div key={p.id}>{p.title}</div>
+        <div key={p.id} style={{ border: "1px solid #444", margin: 10, padding: 10 }}>
+          <b>{p.title}</b>
+          <p>
+            {p.location} • {p.status}
+          </p>
+          <button onClick={() => deleteProject(p.id)}>Delete</button>
+        </div>
       ))}
     </div>
   );
 }
 
+/* 🔒 DISABLE SSR (IMPORTANT) */
+export default dynamic(() => Promise.resolve(Admin), { ssr: false });
