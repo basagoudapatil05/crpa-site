@@ -164,15 +164,39 @@ function Admin() {
 
       <h2>All Projects</h2>
 
-      {projects.map((p) => (
-        <div key={p.id} style={{ border: "1px solid #444", margin: 10, padding: 10 }}>
-          <b>{p.title}</b>
-          <p>
-            {p.location} • {p.status}
-          </p>
-          <button onClick={() => deleteProject(p.id)}>Delete</button>
-        </div>
-      ))}
+      {projects.map((p) => {
+  const imageUrl =
+    Array.isArray(p.images) && p.images.length > 0
+      ? p.images[0]
+      : null;
+
+  return (
+    <div
+      key={p.id}
+      style={{
+        border: "1px solid #444",
+        padding: 10,
+        marginBottom: 10,
+      }}
+    >
+      {imageUrl && (
+        <img
+          src={imageUrl}
+          alt={p.title}
+          style={{ width: 150, height: 100, objectFit: "cover" }}
+          onError={(e) => (e.target.style.display = "none")}
+        />
+      )}
+
+      <b>{p.title}</b>
+      <p>
+        {p.location} • {p.status}
+      </p>
+
+      <button onClick={() => deleteProject(p.id)}>Delete</button>
+    </div>
+  );
+})}
     </div>
   );
 }
