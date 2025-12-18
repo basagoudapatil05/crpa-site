@@ -1,30 +1,35 @@
-"use client";
-
-import React from "react";
+import React, { useEffect, useState } from "react";
 import ProjectCard from "../components/ProjectCard";
+import { supabase } from "../lib/supabase";
 
-export default function CompletedProjects() {
-  const [projects, setProjects] = React.useState([]);
+export default function Completed() {
+  const [projects, setProjects] = useState([]);
 
-  React.useEffect(() => {
-    fetch("/api/projects/list")
-      .then((r) => r.json())
-      .then((data) => {
-        // Show only completed projects
-        setProjects(data.filter((p) => p.status === "completed"));
-      });
+  useEffect(() => {
+    fetchProjects();
   }, []);
+
+  async function fetchProjects() {
+    const { data, error } = await supabase
+      .from("projects")
+      .select("*")
+      .eq("status", "completed")
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setProjects(data);
+    }
+  }
 
   return (
     <div style={{ padding: 30 }}>
       <h1>Completed Projects</h1>
 
-      {projects.length === 0 && <p>No projects found</p>}
+      {projects.length === 0 && <p>No completed projects found.</p>}
 
-      {projects.map((p) => (
-        <ProjectCard key={p.id} project={p} />
+      {projects.map((project) => (
+        <ProjectCard key={project.id} project={project} />
       ))}
     </div>
   );
 }
-
