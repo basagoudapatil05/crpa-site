@@ -47,7 +47,7 @@ function Admin() {
   async function loadProjects() {
     const { data } = await supabase
       .from("projects")
-      .select("id, title, status")
+      .select("*")
       .order("created_at", { ascending: false });
 
     setProjects(data || []);
