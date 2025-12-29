@@ -91,11 +91,26 @@ export default function Admin() {
       <hr />
 
       <h2>All Projects</h2>
-      {projects.map((p) => (
-        <div key={p.id}>
-          <strong>{p.title}</strong> — {p.status}
-        </div>
-      ))}
+      {projects.map((p) => {
+  const images = Array.isArray(p.images) ? p.images : [];
+
+  return (
+    <div key={p.id} style={{ marginBottom: 20 }}>
+      <strong>{p.title}</strong> — {p.status}
+      <br />
+
+      {images.length > 0 && (
+        <img
+          src={images[0]}
+          alt={p.title}
+          style={{ width: 200, marginTop: 10 }}
+          onError={(e) => (e.target.style.display = "none")}
+        />
+      )}
+    </div>
+  );
+})}
+
     </div>
   );
 }
