@@ -1,33 +1,26 @@
 export default function ProjectCard({ project }) {
-  // SAFETY: normalize images
-  const images = Array.isArray(project?.images)
-    ? project.images.filter(
-        (url) =>
-          typeof url === "string" &&
-          url.startsWith("http") &&
-          url.length > 10
-      )
-    : [];
+  // ✅ SAFE IMAGE HANDLING
+  let imageUrl = "/placeholder.jpg";
 
-  const imageUrl = images.length > 0 ? images[0] : null;
+  if (
+    Array.isArray(project.images) &&
+    project.images.length > 0 &&
+    typeof project.images[0] === "string"
+  ) {
+    imageUrl = project.images[0];
+  }
 
   return (
     <div className="project-card">
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={project.title}
-          onError={(e) => {
-            e.target.style.display = "none";
-          }}
-        />
-      ) : (
-        <div className="image-placeholder">No Image</div>
-      )}
+      <img
+        src={imageUrl}
+        alt={project.title || "Project"}
+        onError={(e) => (e.target.src = "/placeholder.jpg")}
+      />
 
       <h3>{project.title}</h3>
       <p>{project.location}</p>
-      <p>{project.scope}</p>
+      <p>{project.status}</p>
     </div>
   );
 }
